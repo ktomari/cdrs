@@ -7,7 +7,7 @@
 cdrs_read_example(convert_to_NA = FALSE)
 }
 \arguments{
-\item{convert_to_NA_}{logical. Whether to convert to NA or not.}
+\item{convert_to_NA}{logical. Whether to convert to NA or not.}
 }
 \value{
 Returns a tibble of the a fictitious data set.

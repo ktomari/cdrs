@@ -31,7 +31,13 @@ devtools::install_github("ktomari/cdrs")
 
 ## Examples
 
-```{r useful_packages, echo = F}
+In the code below, we make use of a few packages. The only package you need to start analyzing the CDRS is our package, but for the sake of clarity, here is the list of packages in the examples below:
+
+* tidyverse
+* kableExtra
+* cdrs
+
+```{r useful_packages, include = F}
 # For quick data manipulation.
 library(tidyverse)
 

@@ -83,7 +83,7 @@ dat2 <- map2_dfc(dat, names(dat), function(col_, nm_){
 
     if(nm_ == "DRS_ID"){
       # If its DRS ID, I have a specific output
-      output <- paste0("DRS_ID",
+      output <- paste0("DRS",
                        2295:2302)
 
     } else if(length(missing_) > 0) {

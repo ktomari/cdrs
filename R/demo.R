@@ -2,7 +2,7 @@
 #'
 #' Using cdrs::cdrs_read(), loads demo data (inside extdata/demo)
 #'
-#' @param convert_to_NA_ logical. Whether to convert to NA or not.
+#' @param convert_to_NA logical. Whether to convert to NA or not.
 #' @return Returns a tibble of the a fictitious data set.
 #' @export
 #'
