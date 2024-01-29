@@ -1,6 +1,8 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+<img src="data-raw/icon.png" style="float: right; width: 128px; height: 128px;"/>
+
 # cdrs
 
 <!-- badges: start -->
@@ -18,6 +20,8 @@ early, or skipping the question. A full description of [how missing
 values are
 handled](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html)
 in the CDRS is available in the project documentation.
+
+This document was last updated on January 29, 2024.
 
 ## Installation
 

@@ -6,3 +6,4 @@
 .quarto
 notes.md
 data-raw/*.zip
+data-raw/*.afdesign
