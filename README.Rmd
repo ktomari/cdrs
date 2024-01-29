@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The intent of this package is to aid data scientists in analyzing the California Delta Residents Survey of 2023. 
+This package includes functions to aid data scientists in analyzing the California Delta Residents Survey (CDRS) of 2023. Given the complex structure of the data set, this package is designed to combine the metadata and the data to facilitate access to variable qualities of interest. The complexity is due in part to the distribution mechanism of the survey, Qualtrics. This survey service yields nuanced information about how a survey respondent chose to mark their deficit, either by directly supplying a response like "I don't know", ending the survey early, or skipping the question. A full description of [how missing values are handled](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html) in the CDRS is available in the project documentation.
 
 ## Installation
 
@@ -29,7 +29,46 @@ You can install the development version of cdrs from [GitHub](https://github.com
 devtools::install_github("ktomari/cdrs")
 ```
 
-## Example
+## Examples
+
+```{r useful_packages, echo = F}
+# For quick data manipulation.
+library(tidyverse)
+
+# For printing tables here.
+library(kableExtra)
+
+# For the reading Delta Residents Survey data.
+library(cdrs)
+```
+
+## Example: Reading Example Data
+
+The primary R function for reading DRS data into your R environment is `cdrs_read()`, however if you don't immediately have access to the [public data set](https://doi.org/10.3886/E195447V1) (or a collaborator data set), you can still test it with this wrap-around function `cdrs_read_example()`. This loads a fabricated data set that is configured to look like the public data set circa December 2023. This fabricated data set is in the package directory `/extdata/demo`.
+
+First, we'll see what the data set looks like with the varying types of 'missing values', which include things like `<Decline to answer>` that means respondents read the question, but declined to select a response, or enter anything in text entry field. A full list of possible '[missing values](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html#the-schema-of-the-drs-data-product)' is available in our documentation.
+
+```{r}
+dat1 <- cdrs::cdrs_read_example()
+
+dat1 %>%
+  head() %>%
+  knitr::kable(format = "markdown")
+```
+
+While the example above demonstrates a greater level of detail around how respondents *did not* engage a survey question, it is not altogether helpful for understanding generative engagements (ie. those responses that selected a given option). In practical terms, it is difficult to plot responses from the code chunk above because it involves additional categories in which we may have no interest. If our objective is to better understand how residents think about an issue, then we might want to convert all 'missing values' to the R value `NA`. This allows plotting packages like {ggplot2} to handle these responses in one broad grouping, which better illustrates generative engagements. Below, we convert 'missing values' to `NA` using the argument `convert_to_NA`.
+
+```{r}
+dat2 <- cdrs::cdrs_read_example(convert_to_NA = T)
+
+dat2  %>%
+  head() %>%
+  knitr::kable(format = "markdown")
+```
+
+### Example: `cdrs_as_NA`
+
+While the function `cdrs_as_NA` is rarely called on its own, we'll take a look at it because it maybe useful after you've read the data into your R environment. This component allows us to convert 'missing values' to `NA`.
 
 First, we'll need a sample from the data set.
 
@@ -38,31 +77,18 @@ data <- data.frame(
   DRS_ID = paste0("DRS", 2:6),
   Q2 = c("<I don't know>", rep("Historic or Delta \"legacy\" town", 4))
 )
+
+data %>%
+  knitr::kable(format = "markdown")
 ```
 
-While this function is rarely called on its own, we'll start by looking at a component of the function that reads the data into the R environment. This component allows the reading function to convert angle bracketed values (eg. `"<Missing>"`) to `NA`.
+Now compare the table above with the one outputted below.
 
 ```{r basics1}
-library(tidyverse)
-library(cdrs)
-
-cdrs_as_NA(data)
+cdrs_as_NA(data) %>%
+  knitr::kable(format = "markdown")
 ```
 
-## Example 2: Fabricated data.
-
-The primary function to read in DRS data is `cdrs_read()`, however if you don't immediately have access to the public data set (or a collaborator data set), you can still test it with this wrap-around function `cdrs_read_example()`. This loads a fabricated data set that is configured to look like the public data set circa December 2023. This fabricated data set is in the package directory `/extdata/demo`.
-
-```{r}
-dat1 <- cdrs::cdrs_read_example()
-head(dat1)
-```
-
-
-```{r}
-dat2 <- cdrs::cdrs_read_example(convert_to_NA = T)
-head(dat2)
-```
 
 ## Acknowledgements
 
