@@ -1,2 +1,6 @@
 ^cdrs\.Rproj$
 ^\.Rproj\.user$
+^README\.Rmd$
+^LICENSE\.md$
+^notes\.md$
+^data-raw$
