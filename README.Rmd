@@ -1,0 +1,71 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# cdrs
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The intent of this package is to aid data scientists in analyzing the California Delta Residents Survey of 2023. 
+
+## Installation
+
+You can install the development version of cdrs from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("ktomari/cdrs")
+```
+
+## Example
+
+First, we'll need a sample from the data set.
+
+```{r data_sample}
+data <- data.frame(
+  DRS_ID = paste0("DRS", 2:6),
+  Q2 = c("<I don't know>", rep("Historic or Delta \"legacy\" town", 4))
+)
+```
+
+While this function is rarely called on its own, we'll start by looking at a component of the function that reads the data into the R environment. This component allows the reading function to convert angle bracketed values (eg. `"<Missing>"`) to `NA`.
+
+```{r basics1}
+library(tidyverse)
+library(cdrs)
+
+cdrs_as_NA(data)
+```
+
+## Example 2: Fabricated data.
+
+The primary function to read in DRS data is `cdrs_read()`, however if you don't immediately have access to the public data set (or a collaborator data set), you can still test it with this wrap-around function `cdrs_read_example()`. This loads a fabricated data set that is configured to look like the public data set circa December 2023. This fabricated data set is in the package directory `/extdata/demo`.
+
+```{r}
+dat1 <- cdrs::cdrs_read_example()
+head(dat1)
+```
+
+
+```{r}
+dat2 <- cdrs::cdrs_read_example(convert_to_NA = T)
+head(dat2)
+```
+
+## Acknowledgements
+
+I would like to thank the Dr. Jessica Rudnick, the Core R Team, the authors of the Tidyverse, the authors of 'R Packages' 2nd Ed. (Wickham and Bryan), Dirk Eddelbuettel et al. for the digest package, and last but not least, Thomas Lumley for the survey package.
+
+Initial funding was provided by Delta Science Program, Delta Stewardship Council (DSC-21143).
