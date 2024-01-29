@@ -1,9 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<img src="data-raw/icon.png" style="float: right; width: 128px; height: 128px;"/>
-
-# cdrs
+# cdrs <img src="data-raw/icon.png" style="float: right; width: 128px; height: 128px;"/>
 
 <!-- badges: start -->
 <!-- badges: end -->
