@@ -9,9 +9,10 @@
 #' @examples
 #' demo <- cdrs_read_example(convert_to_NA = TRUE)
 cdrs_read_example <- function(
-    convert_to_NA = FALSE
-){
+    convert_to_NA = FALSE) {
   message("Loading fabricated DRS data.")
-  cdrs_read(path_ = system.file("extdata", "demo", package = "cdrs"),
-            convert_to_NA = convert_to_NA)
+  cdrs_read(
+    path_ = system.file("extdata", "demo", package = "cdrs"),
+    convert_to_NA = convert_to_NA
+  )
 }

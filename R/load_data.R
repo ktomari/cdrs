@@ -5,14 +5,12 @@
 #' @param data_ A data.frame or tibble consisting of the data from the DRS.
 #' @return A data.frame or tibble.
 #' @export
-#' @importFrom magrittr %>%
 #'
 #' @examples
 #' df <- data.frame(Q0_0 = c("1", "<Missing>", "3"))
 #' cdrs_as_NA(df)
 cdrs_as_NA <- function(
-    data_
-){
+    data_) {
   # Validate dat is a df or tb.
   stopifnot(
     base::is.data.frame(data_) |
@@ -23,31 +21,33 @@ cdrs_as_NA <- function(
   data_ %>%
     dplyr::mutate(
       # change columns that are of type character.
-      dplyr::across(.cols = tidyselect::where(base::is.character),
-                    .fns = ~ dplyr::case_when(
-                      # When string with angle brackets detected,
-                      # assign NA value.
-                      stringr::str_detect(.x, "\\<.+\\>") ~
-                        NA_character_,
-                      # Otherwise, return string.
-                      TRUE ~ .x)
+      dplyr::across(
+        .cols = tidyselect::where(base::is.character),
+        .fns = ~ dplyr::case_when(
+          # When string with angle brackets detected,
+          # assign NA value.
+          stringr::str_detect(.x, "\\<.+\\>") ~
+            NA_character_,
+          # Otherwise, return string.
+          TRUE ~ .x
+        )
       ),
       # change columns that are of type factor.
-      dplyr::across(.cols = tidyselect::where(base::is.factor),
-                    .fns = ~ dplyr::case_when(
-                      # When factor with angle brackets detected,
-                      # assign NA value.
-                      stringr::str_detect(as.character(.x), "\\<.+\\>") ~
-                        NA_character_,
-                      # Otherwise, return factor.
-                      TRUE ~ base::as.character(.x)
-                    ) %>%
-                      # Then convert to factor, and
-                      # drop any empty levels,
-                      # ie. factors w/ angle brackets.
-                      base::factor() %>%
-                      forcats::fct_drop()
-
+      dplyr::across(
+        .cols = tidyselect::where(base::is.factor),
+        .fns = ~ dplyr::case_when(
+          # When factor with angle brackets detected,
+          # assign NA value.
+          stringr::str_detect(as.character(.x), "\\<.+\\>") ~
+            NA_character_,
+          # Otherwise, return factor.
+          TRUE ~ base::as.character(.x)
+        ) %>%
+          # Then convert to factor, and
+          # drop any empty levels,
+          # ie. factors w/ angle brackets.
+          base::factor() %>%
+          forcats::fct_drop()
       )
     )
 }
@@ -59,10 +59,8 @@ cdrs_as_NA <- function(
 #' @param path_ is a file path to a directory containing the documents. This should not be a zip file.
 #' @return fl, a tibble, including file name, path, and type of data set.
 #' @export
-#' @importFrom magrittr %>%
 cdrs_validate <- function(
-    path_
-){
+    path_) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Validate Files ----
   # Validate that all the necessary files are present.
@@ -76,7 +74,7 @@ cdrs_validate <- function(
   # Please note, that there is an 'internal data' data.frame,
   # `necessary_files`, which is used below. It was defined in
   # raw-data/internal_data.R
-  if(!exists('necessary_files')){
+  if (!exists("necessary_files")) {
     # This error is to help with development only.
     # It shouldn't be raised once the package is completed.
     stop("Missing 'necessary_files'")
@@ -84,15 +82,15 @@ cdrs_validate <- function(
 
   # Determine if each file in the filelist is a necessary file,
   # and if so, determine type.
-  fl$type <- purrr::map_vec(fl$file, function(path_){
+  fl$type <- purrr::map_vec(fl$file, function(path_) {
     # Obtain location of name in necessary_files
-    i <- purrr::map_vec(necessary_files$regex, function(regex_){
+    i <- purrr::map_vec(necessary_files$regex, function(regex_) {
       stringr::str_detect(path_, regex_)
     }) |>
       which()
 
     # if file is not a necessary file.
-    if(identical(i, integer(0))){
+    if (identical(i, integer(0))) {
       return(as.character(NA))
     }
 
@@ -101,10 +99,12 @@ cdrs_validate <- function(
   })
 
   # Validate that all necessary files present.
-  if(length(
-    purrr::discard(fl$type,
-                   ~is.na(.x))) != nrow(necessary_files)){
-
+  if (length(
+    purrr::discard(
+      fl$type,
+      ~ is.na(.x)
+    )
+  ) != nrow(necessary_files)) {
     # Determine which files are missing.
     missing <- necessary_files$style[
       which(!(necessary_files$name %in% fl$type))
@@ -112,7 +112,6 @@ cdrs_validate <- function(
       paste0(collapse = ", ")
 
     stop(stringr::str_glue("Error: \"{missing}\" file(s) missing."))
-
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,7 +125,7 @@ cdrs_validate <- function(
     dplyr::pull(path) %>%
     readLines(con = .)
 
-  if(nchar(hash) != 64){
+  if (nchar(hash) != 64) {
     stop(".hash.text value is of improper length for SHA256.")
   }
 
@@ -136,11 +135,13 @@ cdrs_validate <- function(
     dplyr::pull(path)
 
   # Obtain SHA256 hash for the data.
-  data_hash <- digest::digest(object = data,
-                              algo = "sha256",
-                              file = TRUE)
+  data_hash <- digest::digest(
+    object = data,
+    algo = "sha256",
+    file = TRUE
+  )
 
-  if(!identical(data_hash, hash)){
+  if (!identical(data_hash, hash)) {
     stop("Data could not be validated. The SHA 256 hash value obtained for the data does not match the value provided by the DRS team.")
   }
 
@@ -157,16 +158,14 @@ cdrs_validate <- function(
 #' @param convert_to_NA is a logical vector of length 1. Converts the variety of missingness levels (eg. &lt;Decline to answer&gt;) to `NA` values, simplifying calculations. Importantly, if there are columns that were originally factors (due to different missingness levels), but is principally a numeric column, this function will adjust these columns to type numeric.
 #' @return Returns a tibble of the Delta Residents Survey 2023 data set.
 #' @export
-#' @importFrom magrittr %>%
 #'
 #' @examples
 #' dat <- cdrs_read(
-#'  path_ = system.file("extdata", "demo", package = "cdrs")
+#'   path_ = system.file("extdata", "demo", package = "cdrs")
 #' )
 cdrs_read <- function(
     path_ = getwd(),
-    convert_to_NA = FALSE
-){
+    convert_to_NA = FALSE) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Validate argument: path_
   stopifnot(
@@ -177,13 +176,14 @@ cdrs_read <- function(
   # Is Zip File? ----
   # If path_ leads to a zip file, then unzip it.
   # First, determine if its a zip.
-  is_zip <- grepl(pattern = "\\.zip$",
-                  x = basename(path_),
-                  perl = TRUE)
+  is_zip <- grepl(
+    pattern = "\\.zip$",
+    x = basename(path_),
+    perl = TRUE
+  )
 
   # Second, we manipulate the zip file: unzip it into a temporary directory.
-  if(is_zip){
-
+  if (is_zip) {
     # get output directory name.
     out_dir <- basename(path_) %>%
       stringr::str_remove("\\.zip$")
@@ -192,8 +192,10 @@ cdrs_read <- function(
     temp_dir <- tempdir()
 
     # Unzip the file
-    utils::unzip(zipfile = path_,
-                 exdir = temp_dir)
+    utils::unzip(
+      zipfile = path_,
+      exdir = temp_dir
+    )
 
     # Replace old path.
     path_ <- file.path(temp_dir, out_dir)
@@ -226,8 +228,10 @@ cdrs_read <- function(
     vars = fl %>%
       dplyr::filter(type == "data") %>%
       dplyr::pull(path) %>%
-      readLines(con = .,
-                n = 1) %>%
+      readLines(
+        con = .,
+        n = 1
+      ) %>%
       stringr::str_split_1(., "\\,")
   )
 
@@ -239,9 +243,12 @@ cdrs_read <- function(
     dplyr::mutate(readr_type = dplyr::case_when(
       value == "factor" ~ "f",
       value == "factor - numeric" ~ "f",
-      stringr::str_detect(value,
-                          stringr::regex("posix",
-                                         ignore_case = TRUE)) ~ "T",
+      stringr::str_detect(
+        value,
+        stringr::regex("posix",
+          ignore_case = TRUE
+        )
+      ) ~ "T",
       value == "character" ~ "c",
       value == "numeric" ~ "n"
     ))
@@ -259,7 +266,8 @@ cdrs_read <- function(
   data <- readr::read_csv(
     file = fl$path[fl$type == "data"],
     col_types = paste0(col_order$readr_type,
-                       collapse = "")
+      collapse = ""
+    )
   )
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -272,14 +280,14 @@ cdrs_read <- function(
 
   # Obtain metadata of ordinal variables only,
   # otherwise return NULL
-  fcts_ <- purrr::map(vars_, function(tb){
+  fcts_ <- purrr::map(vars_, function(tb) {
     # Obtain class of variable.
     cls <- tb %>%
       dplyr::filter(name == "R Class") %>%
       dplyr::pull(value)
 
     # If not a factor, return NULL.
-    if(cls != "factor"){
+    if (cls != "factor") {
       return(NULL)
     }
 
@@ -288,13 +296,13 @@ cdrs_read <- function(
       dplyr::filter(name == "factors")
 
     # If no "factors" presented, return NULL.
-    if(nrow(fcts) == 0){
+    if (nrow(fcts) == 0) {
       return(NULL)
     }
 
     # If there are no encodings (ie. order is not important),
     # return NULL.
-    if(all(purrr::map_vec(fcts$encoding, is.na))){
+    if (all(purrr::map_vec(fcts$encoding, is.na))) {
       return(NULL)
     }
 
@@ -304,27 +312,29 @@ cdrs_read <- function(
     # 2. encoding value
     fcts %>%
       dplyr::mutate(std = stringr::str_detect(value,
-                                              "\\<.+\\>",
-                                              negate = TRUE)) %>%
+        "\\<.+\\>",
+        negate = TRUE
+      )) %>%
       dplyr::arrange(dplyr::desc(std), encoding) %>%
       # return Variable, value, and encoding only.
       dplyr::select(Variable, value, encoding)
-
-  })   # End of map()
+  }) # End of map()
 
   # remove NULL values
-  fcts_ <- purrr::discard(fcts_, ~is.null(.x))
+  fcts_ <- purrr::discard(fcts_, ~ is.null(.x))
 
   # Assign names to fcts_
   fcts_ <- fcts_ %>%
     purrr::set_names(
-      purrr::map_vec(fcts_, function(tb){tb$Variable[1]})
-      )
+      purrr::map_vec(fcts_, function(tb) {
+        tb$Variable[1]
+      })
+    )
 
   # Re-order ordinal variables
-  data <- purrr::map2_dfc(data, names(data), function(col_, nm){
+  data <- purrr::map2_dfc(data, names(data), function(col_, nm) {
     # Is this column an ordinal factor?
-    if(nm %in% names(fcts_)){
+    if (nm %in% names(fcts_)) {
       # obtain tibble with Variable, value, encoding.
       fct <- fcts_[[nm]]
       # RETURN
@@ -335,39 +345,39 @@ cdrs_read <- function(
       # RETURN
       col_
     }
-  })  # End of map()
+  }) # End of map()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Convert NAs ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if(convert_to_NA){
+  if (convert_to_NA) {
     # Convert <Missingness> to NA
     data <- cdrs_as_NA(data)
 
     # Convert Factor - Numeric to just Numeric
-    data <- purrr::map2_dfc(data, names(data), function(col_, nm){
+    data <- purrr::map2_dfc(data, names(data), function(col_, nm) {
       cls <- r_class %>%
         dplyr::filter(Variable == nm) %>%
         dplyr::pull(value)
 
       # Return
-      if(cls == "factor - numeric"){
+      if (cls == "factor - numeric") {
         as.numeric(col_)
       } else {
         col_
       }
-    })   # End of map()
-  }  # End of if()
+    }) # End of map()
+  } # End of if()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Sort columns in the order as they appear in the data dictionary.
   data <- data %>%
     dplyr::select(
       dd$Variable %>% unique()
-      )
+    )
 
   # Delete temporary unzipped file.
-  if(is_zip){
+  if (is_zip) {
     unlink(x = path_, recursive = TRUE)
   }
 

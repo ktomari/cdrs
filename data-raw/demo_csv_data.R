@@ -29,7 +29,7 @@ get_package_path <- function(pkg_name) {
   return(pkg_path)
 }
 
-cwd <- get_package_path('cdrs')
+cwd <- get_package_path("cdrs")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Where is the data?
@@ -66,7 +66,7 @@ message("Creating demo data set.")
 nmax <- 8
 
 # begin extracting data.
-dat2 <- map2_dfc(dat, names(dat), function(col_, nm_){
+dat2 <- map2_dfc(dat, names(dat), function(col_, nm_) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # get unique values
   uniq_ <- unique(col_)
@@ -78,44 +78,47 @@ dat2 <- map2_dfc(dat, names(dat), function(col_, nm_){
   normal_ <- uniq_[str_which(uniq_, "\\<.+\\>", negate = T)]
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if(length(uniq_) > nmax){
+  if (length(uniq_) > nmax) {
     # LARGE NUMBER
 
-    if(nm_ == "DRS_ID"){
+    if (nm_ == "DRS_ID") {
       # If its DRS ID, I have a specific output
-      output <- paste0("DRS",
-                       2295:2302)
-
-    } else if(length(missing_) > 0) {
+      output <- paste0(
+        "DRS",
+        2295:2302
+      )
+    } else if (length(missing_) > 0) {
       # If it contains missing values...
 
       # sample `normal_` values.
-      normal_ <- sample(x = normal_,
-                        size = {nmax - length(missing_)},
-                        replace = F)
+      normal_ <- sample(
+        x = normal_,
+        size = {
+          nmax - length(missing_)
+        },
+        replace = F
+      )
 
       # randomize
-      output <- sample(x = c(missing_, normal_),
-             size = nmax)
-
+      output <- sample(
+        x = c(missing_, normal_),
+        size = nmax
+      )
     } else {
       # If it is neither DRS_ID, nor contains <Missingness> values,
       # then just sample it.
       output <- sample(col_, size = nmax, replace = F)
     }
-
-  } else if(length(uniq_) == nmax){
+  } else if (length(uniq_) == nmax) {
     # EXACTLY 8 VALUES
     output <- sample(uniq_, size = nmax, replace = F)
-
-  } else if(length(uniq_) < nmax){
+  } else if (length(uniq_) < nmax) {
     # LESS THAN 8 VALUES
 
     # lets get a random sample + at least 1 copy of each unique value.
     nmin <- nmax - length(uniq_)
     additional <- sample(uniq_, size = nmin, replace = T)
     output <- sample(c(uniq_, additional), size = nmax)
-
   }
 
   # return
@@ -157,8 +160,10 @@ write(
 # Write Data Dictionary ----
 file.copy(
   from = dd,
-  to = file.path(extdata_path,
-                 str_glue("DRS_data_dictionary_demo_{date_}.xlsx"))
+  to = file.path(
+    extdata_path,
+    str_glue("DRS_data_dictionary_demo_{date_}.xlsx")
+  )
 )
 
 unlink(temp_)

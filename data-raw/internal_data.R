@@ -1,4 +1,3 @@
-
 # Used for drs_read
 necessary_files <- data.frame(
   name = c("dd", "data", "hash"),
@@ -10,7 +9,14 @@ necessary_files <- data.frame(
   regex = c(
     "^DRS(\\_|\\s)data(\\_|\\s)dictionary(\\_|\\s).+\\.xlsx$",
     "^DRS(\\_|\\s).+\\.csv$",
-    "^DRS(\\_|\\s).+\\.hash\\.txt$")
+    "^DRS(\\_|\\s).+\\.hash\\.txt$"
+  )
 )
 
-# usethis::use_data(necessary_files, internal = T, overwrite = T)
+# Used (potentially) for fpc
+zone_N <- data.frame(
+  Zone = factor(c(1, 2, 3)),
+  N = c(11727, 540340, 166085)
+)
+
+usethis::use_data(necessary_files, zone_N, internal = T, overwrite = T)

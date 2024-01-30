@@ -20,6 +20,6 @@ Loads, validates, and corrects factor levels in the Delta Residents Survey
 }
 \examples{
 dat <- cdrs_read(
- path_ = system.file("extdata", "demo", package = "cdrs")
+  path_ = system.file("extdata", "demo", package = "cdrs")
 )
 }
