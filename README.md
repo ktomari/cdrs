@@ -6,20 +6,16 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The package {cdrs} (pronounced “cedars”) includes functions to aid data
-scientists in analyzing the California Delta Residents Survey (CDRS) of
-2023. Given the complex structure of the data set, this package is
-designed to combine the metadata and the data to facilitate access to
-variable qualities of interest. The complexity is due in part to the
-distribution mechanism of the survey, Qualtrics. This survey service
-yields nuanced information about how a survey respondent chose to mark
-their deficit, either by directly supplying a response like “I don’t
-know”, ending the survey early, or skipping the question. A full
-description of [how missing values are
-handled](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html)
-in the CDRS is available in the project documentation.
+The package {cdrs} (pronounced “cedars”) includes functions to aid
+researchers in analyzing the California Delta Residents Survey (CDRS) of
+2023. While some examples of the functions available in this package are
+demonstrated below, the core set of
+[documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_cdrs_package.html)
+is available on the [DRS GitHub
+homepage](https://ktomari.github.io/DeltaResidentsSurvey/). A guide to
+install this package is provided in the following section.
 
-This document was last updated on January 30, 2024.
+*This document was last updated on January 30, 2024.*
 
 ## Installation
 
