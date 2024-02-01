@@ -4,14 +4,14 @@
 \alias{cdrs_subset}
 \title{Prepare and subset DRS data for use with cdrs_design().}
 \usage{
-cdrs_subset(data_, drop_na = T, ...)
+cdrs_subset(data_, ..., drop_na = T)
 }
 \arguments{
 \item{data_}{is the complete DRS dataset.}
 
-\item{drop_na}{logical, whether or not to drop NA values in \code{...} columns.}
-
 \item{...}{either a character vector of or unquoted column names.}
+
+\item{drop_na}{logical, whether or not to drop NA values in \code{...} columns.}
 }
 \description{
 Subsets data and removes missing values.

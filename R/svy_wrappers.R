@@ -1,56 +1,13 @@
 # This file contains helpers, data prep and wraparounds for essential survey
 # functions.
 
-#' Process Column Names
-#'
-#' This utility function takes both quoted and unquoted column names as input
-#' and returns a character vector of column names. It is designed to facilitate
-#' flexible function arguments, allowing users to specify dataframe column names
-#' either by directly referring to the column names without quotes (unquoted)
-#' or by passing them as strings (quoted).
-#'
-#' @param ... Variable argument list where each argument can be either a
-#' unquoted column name (symbol) or a quoted column name (character string).
-#'
-#' @return A character vector containing the processed column names.
-#'
-#' @examples
-#' # Assuming df is a dataframe with columns named 'Col1', 'Col2', etc.
-#' cdrs:::process_colnames(Col1, "Col2")
-#' # Returns: c("Col1", "Col2")
-#'
-process_colnames <- function(...) {
-  # @importFrom rlang enquos is.symbol as_string eval
-  # Capture the dots arguments
-  dots <- enquos(...)
-
-  # Initialize an empty list to store column names
-  cols_str <- c()
-
-  # Iterate through each argument
-  for (dot in dots) {
-    # Check if the argument is a symbol (unquoted) or a character (quoted)
-    if (is.symbol(dot)) {
-      # Convert symbol to string
-      cols_str <- c(cols_str, as_string(dot))
-    } else if (is.character(eval(dot))) {
-      # Evaluate and add character names directly
-      cols_str <- c(cols_str, eval(dot))
-    }
-  }
-
-  # Return the vector of column names
-  return(cols_str)
-}
-
-
 #' Prepare and subset DRS data for use with cdrs_design().
 #'
 #' Subsets data and removes missing values.
 #'
 #' @param data_ is the complete DRS dataset.
-#' @param drop_na logical, whether or not to drop NA values in `...` columns.
 #' @param ... either a character vector of or unquoted column names.
+#' @param drop_na logical, whether or not to drop NA values in `...` columns.
 #'
 #' @export
 #' @examples
@@ -62,18 +19,15 @@ process_colnames <- function(...) {
 #' drs_subset <- cdrs_subset(data_ = df, drop_na = TRUE, Q1)
 cdrs_subset <- function(
     data_,
-    drop_na = T,
-    ...) {
-  # require at least one column name
-  stopifnot(length(enquos(...)) > 0)
+    ...,
+    drop_na = T
+    ) {
+  # Require at least one column name
+  cols <- rlang::ensyms(...)
+  stopifnot(length(cols) > 0)
 
-  # Use the utility function to process the column names
-  # (This is in {cdrs}, defined above.)
-  cols_str <- process_colnames(...)
-
-  if ("Zone" %in% cols_str | "WTFINAL" %in% cols_str) {
-    message("Note, you do not need to specify Zone or WTFINAL.")
-  }
+  # Convert symbols to strings
+  cols_str <- sapply(cols, function(x) as_string(x))
 
   sub_ <- data_ %>%
     # Select the variable(s) of interest, and the Zone and weights columns
@@ -148,7 +102,7 @@ cdrs_design <- function(
 
   if (set_fpc) {
     data_ <- data_ %>%
-      dplyr::left_join(zone_N, by = Zone)
+      dplyr::left_join(zone_N, by = "Zone")
 
     # return
     # Create survey design object
