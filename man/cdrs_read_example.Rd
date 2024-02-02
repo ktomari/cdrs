@@ -13,7 +13,9 @@ cdrs_read_example(convert_to_NA = FALSE)
 Returns a tibble of the a fictitious data set.
 }
 \description{
-Using cdrs::cdrs_read(), loads demo data (inside extdata/demo)
+Using cdrs::cdrs_read(), loads demo data (inside extdata/demo). Do not draw
+conclusions from this fabricated "data set". The data were created by
+scrambling the public version of the DRS data.
 }
 \examples{
 demo <- cdrs_read_example(convert_to_NA = TRUE)
