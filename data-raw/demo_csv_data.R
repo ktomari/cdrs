@@ -143,12 +143,12 @@ withr::with_seed(
 message("Beginning section to write files.")
 # Set the path to the inst/extdata directory relative to this script
 # Assuming this script is in the data-raw directory at the package root
-extdata_path <- file.path(cwd, "inst", "extdata", "demo")
+demo_path <- file.path(cwd, "inst", "extdata", "demo")
 
 # Create the extdata/demo directory if it doesn't exist
-if (!dir.exists(extdata_path)) {
+if (!dir.exists(demo_path)) {
   message("Creating extdata dir structure.")
-  dir.create(extdata_path, recursive = TRUE)
+  dir.create(demo_path, recursive = TRUE)
 }
 
 # Write to File ----
@@ -165,38 +165,42 @@ output_paths <- list(
 ## Write to File ----
 write_csv(
   x = dat2,
-  file = file.path(extdata_path, output_paths$csv)
+  file = file.path(demo_path, output_paths$csv)
 )
 
 ## Write Hash ----
 write(
   x = digest(
-    object = file.path(extdata_path, output_paths$csv),
+    object = file.path(demo_path, output_paths$csv),
     algo = "sha256",
     file = T
   ),
-  file = file.path(extdata_path, output_paths$hash)
+  file = file.path(demo_path, output_paths$hash)
 )
 
 ## Write Data Dictionary ----
 file.copy(
   from = dd,
-  to = file.path(extdata_path, output_paths$xlsx)
+  to = file.path(demo_path, output_paths$xlsx)
 )
 
 ## Write to Zip ----
-with_dir(extdata_path, {
+with_dir(demo_path, {
   zip(zipfile = str_glue("DRS_demo_{date_}.zip"),
       files = output_paths %>% unlist())
 })
 
+# move zip file up one dir.
 file.copy(
-  from = file.path(extdata_path,
+  from = file.path(demo_path,
                    str_glue("DRS_demo_{date_}.zip")),
   to = file.path(cwd,
                  "inst",
                  "extdata",
                  str_glue("DRS_demo_{date_}.zip"))
 )
+
+file.remove(file.path(demo_path,
+                      str_glue("DRS_demo_{date_}.zip")))
 
 unlink(temp_)
