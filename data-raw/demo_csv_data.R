@@ -3,6 +3,7 @@ library(tidyverse)
 library(readxl)
 library(openxlsx)
 library(digest)
+library(withr)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Helper function to get directory path for package.
@@ -36,8 +37,8 @@ cwd <- get_package_path("cdrs")
 zip_ <- file.path(cwd, "data-raw", "DRS public data_2023_12_01.zip")
 
 message(str_glue("Loading data with cdrs_read: {zip_}"))
-# Load the data
-load(file.path(cwd, "R", "sysdata.rda"))
+# Load the (internal?) data
+# load(file.path(cwd, "R", "sysdata.rda"))
 dat <- cdrs::cdrs_read(path_ = zip_)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,67 +64,80 @@ dd <- file.path(temp_, new_dir, dd)
 # winnowed to a uniform sample of each possible variable type.
 # We want the output to be exactly 8 value in length.
 message("Creating demo data set.")
+# this value identifies the greatest number of categories possible per
+# categorical variables.
 nmax <- 8
+# This value indicates how many rows of demo data we want.
+nrows <- 200
 
-# begin extracting data.
-dat2 <- map2_dfc(dat, names(dat), function(col_, nm_) {
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # get unique values
-  uniq_ <- unique(col_)
+withr::with_seed(
+  seed = 062016,
+  code = {
+    # begin extracting data.
+    dat2 <- map2_dfc(dat, names(dat), function(col_, nm_) {
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # get unique values
+      uniq_ <- unique(col_)
 
-  # get missingness values first
-  missing_ <- uniq_[str_which(uniq_, "\\<.+\\>")]
+      # get missingness values first
+      missing_ <- uniq_[str_which(uniq_, "\\<.+\\>")]
 
-  # get all other values
-  normal_ <- uniq_[str_which(uniq_, "\\<.+\\>", negate = T)]
+      # get all other values
+      normal_ <- uniq_[str_which(uniq_, "\\<.+\\>", negate = T)]
 
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (length(uniq_) > nmax) {
-    # LARGE NUMBER
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      if(nm_ == "DRS_ID") {
+        output <- paste0(
+          "DRS",
+          2295:(2294 + nrows)
+        )
+      } else if (length(uniq_) > nmax) {
+        # LARGE NUMBER (either Q1a or WTFINAL)
 
-    if (nm_ == "DRS_ID") {
-      # If its DRS ID, I have a specific output
-      output <- paste0(
-        "DRS",
-        2295:2302
-      )
-    } else if (length(missing_) > 0) {
-      # If it contains missing values...
+        if (length(missing_) > 0) {
+          # If it contains missing values...
 
-      # sample `normal_` values.
-      normal_ <- sample(
-        x = normal_,
-        size = {
-          nmax - length(missing_)
-        },
-        replace = F
-      )
+          # sample `normal_` values.
+          # In this case, we primarily want to ensure that
+          # at least one of each
+          # <missingness> values are recorded.
+          # So we'll leave space for each value of from `missing_`.
+          # Chances are, we'll get several, depending on the size of nrows.
+          normal_ <- sample(
+            x = uniq_,
+            size = {
+              nrows - length(missing_)
+            },
+            replace = T
+          )
 
-      # randomize
-      output <- sample(
-        x = c(missing_, normal_),
-        size = nmax
-      )
-    } else {
-      # If it is neither DRS_ID, nor contains <Missingness> values,
-      # then just sample it.
-      output <- sample(col_, size = nmax, replace = F)
-    }
-  } else if (length(uniq_) == nmax) {
-    # EXACTLY 8 VALUES
-    output <- sample(uniq_, size = nmax, replace = F)
-  } else if (length(uniq_) < nmax) {
-    # LESS THAN 8 VALUES
+          # randomize
+          output <- sample(
+            x = c(missing_, normal_),
+            size = nrows,
+            replace = F
+          )
+        } else {
+          # If it is neither DRS_ID, nor contains <Missingness> values,
+          # then just sample it.
+          output <- sample(col_, size = nrows, replace = T)
+        }
+      } else if (length(uniq_) == nmax) {
+        # EXACTLY 8 VALUES (ie. levels/categories)
+        output <- sample(uniq_, size = nrows, replace = T)
+      } else if (length(uniq_) < nmax) {
+        # LESS THAN 8 VALUES
 
-    # lets get a random sample + at least 1 copy of each unique value.
-    nmin <- nmax - length(uniq_)
-    additional <- sample(uniq_, size = nmin, replace = T)
-    output <- sample(c(uniq_, additional), size = nmax)
+        # lets get a random sample + at least 1 copy of each unique value.
+        additional <- sample(uniq_, size = {nrows - length(uniq_)}, replace = T)
+        output <- sample(c(uniq_, additional), size = nrows)
+      }
+
+      # return
+      output
+    })
   }
-
-  # return
-  output
-})
+)
 
 # Where do we want to write files? ----
 message("Beginning section to write files.")
