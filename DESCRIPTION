@@ -2,22 +2,15 @@ Package: cdrs
 Title: Functions for the California Delta Residents Survey Data
 Version: 0.1.0
 Authors@R: 
-    person(given = "Kenji", 
-    family = "Tomari", 
-    email = "ktomari@ucdavis.edu", 
-    role = c("aut", "cre"),
-    comment = c(ORCID = "0000-0001-8039-3999"))
-Description: Facilitates the proper loading of California Delta Residents Survey
-    data (2023) available on Open ICPSR, https://doi.org/10.3886/E195447V1. 
-    This package includes tools for reading the data into the R environment correctly.
+    person("Kenji", "Tomari", , "ktomari@ucdavis.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-8039-3999"))
+Description: Facilitates the proper loading of California Delta Residents
+    Survey data (2023) available on Open ICPSR,
+    https://doi.org/10.3886/E195447V1.  This package includes tools for
+    reading the data into the R environment correctly.
 License: GPL (>= 3)
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
-Config/DataSet: 
+Depends: 
+    R (>= 2.10)
 Imports: 
     digest,
     dplyr,
@@ -33,5 +26,11 @@ Imports:
     tidyr,
     tidyselect,
     utils
-Depends: 
-    R (>= 2.10)
+Suggests: 
+    testthat (>= 3.0.0),
+    withr
+Config/DataSet: 
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
