@@ -58,7 +58,6 @@ cdrs_as_NA <- function(
 #'
 #' @param path_ is a file path to a directory containing the documents. This should not be a zip file.
 #' @return fl, a tibble, including file name, path, and type of data set.
-#' @export
 cdrs_validate <- function(
     path_) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
