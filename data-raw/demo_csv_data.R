@@ -157,48 +157,46 @@ date_ <- basename(zip_) %>%
   str_extract("\\d{4}\\_\\d{2}\\_\\d{2}")
 
 output_paths <- list(
-  csv = file.path(
-    extdata_path,
-    str_glue("DRS_demo_{date_}.csv")),
-  hash = file.path(
-    extdata_path,
-    str_glue("DRS_demo_{date_}.hash.txt")),
-  xlsx = file.path(
-    extdata_path,
-    str_glue("DRS_data_dictionary_demo_{date_}.xlsx")
-  )
+  csv = str_glue("DRS_demo_{date_}.csv"),
+  hash = str_glue("DRS_demo_{date_}.hash.txt"),
+  xlsx = str_glue("DRS_data_dictionary_demo_{date_}.xlsx")
 )
 
 ## Write to File ----
 write_csv(
   x = dat2,
-  file = output_paths$csv
+  file = file.path(extdata_path, output_paths$csv)
 )
 
 ## Write Hash ----
 write(
   x = digest(
-    object = output_paths$csv,
+    object = file.path(extdata_path, output_paths$csv),
     algo = "sha256",
     file = T
   ),
-  file = output_paths$hash
+  file = file.path(extdata_path, output_paths$hash)
 )
 
 ## Write Data Dictionary ----
 file.copy(
   from = dd,
-  to = output_paths$xlsx
+  to = file.path(extdata_path, output_paths$xlsx)
 )
 
 ## Write to Zip ----
+with_dir(extdata_path, {
+  zip(zipfile = str_glue("DRS_demo_{date_}.zip"),
+      files = output_paths %>% unlist())
+})
 
-zip(
-  zipfile = file.path(cwd,
-                      "inst",
-                      "extdata",
-                      str_glue("DRS_demo_{date_}.zip")),
-  files = output_paths %>% unlist()
+file.copy(
+  from = file.path(extdata_path,
+                   str_glue("DRS_demo_{date_}.zip")),
+  to = file.path(cwd,
+                 "inst",
+                 "extdata",
+                 str_glue("DRS_demo_{date_}.zip"))
 )
 
 unlink(temp_)
