@@ -163,7 +163,7 @@ cdrs_validate <- function(
 #'   path_ = system.file("extdata", "demo", package = "cdrs")
 #' )
 cdrs_read <- function(
-    path_ = getwd(),
+    path_ = NULL,
     convert_to_NA = FALSE) {
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Validate argument: path_
@@ -190,14 +190,18 @@ cdrs_read <- function(
     # Define the temporary directory to extract files to
     temp_dir <- tempdir()
 
+    # Full output dir.
+    out_dir <- file.path(temp_dir, out_dir)
+
     # Unzip the file
     utils::unzip(
       zipfile = path_,
-      exdir = temp_dir
+      junkpaths = T,
+      exdir = out_dir
     )
 
     # Replace old path.
-    path_ <- file.path(temp_dir, out_dir)
+    path_ <- out_dir
   }
 
   # Run cdrs_validate ----

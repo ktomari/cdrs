@@ -4,7 +4,7 @@
 \alias{cdrs_read}
 \title{Read the California Delta Residents Survey Dataset}
 \usage{
-cdrs_read(path_ = getwd(), convert_to_NA = FALSE)
+cdrs_read(path_ = NULL, convert_to_NA = FALSE)
 }
 \arguments{
 \item{path_}{is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.}
