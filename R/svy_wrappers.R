@@ -1,58 +1,6 @@
 # This file contains helpers, data prep and wraparounds for essential survey
 # functions.
 
-#' Prepare and subset DRS data for use with cdrs_design().
-#'
-#' Subsets data and removes missing values.
-#'
-#' @param data_ is the complete DRS dataset.
-#' @param ... either a character vector of or unquoted column names.
-#' @param drop_na logical, whether or not to drop NA values in `...` columns.
-#'
-#' @export
-#' @examples
-#' df <- data.frame(
-#'   Q1 = c("Y", NA, "N"),
-#'   Zone = c(1, 2, 3),
-#'   WTFINAL = c(.8, 1, 1.2)
-#' )
-#' drs_subset <- cdrs_subset(data_ = df, drop_na = TRUE, Q1)
-cdrs_subset <- function(
-    data_,
-    ...,
-    drop_na = T
-    ) {
-  # Require at least one column name
-  cols <- rlang::ensyms(...)
-  stopifnot(length(cols) > 0)
-
-  # Convert symbols to strings
-  cols_str <- sapply(cols, function(x) as_string(x))
-
-  sub_ <- data_ %>%
-    # Select the variable(s) of interest, and the Zone and weights columns
-    dplyr::select(dplyr::all_of(cols_str), Zone, WTFINAL) %>%
-    # Remove NA values in the weight column
-    dplyr::filter(!is.na(WTFINAL))
-
-  if (drop_na) {
-    # Remove missing values in the variable column(s)
-    sub_ <- sub_ %>%
-      dplyr::filter(!dplyr::if_any(tidyselect::all_of(cols_str),
-                                   is.na))
-  }
-
-  # return
-  sub_ %>%
-    # Drop factors that are unused.
-    dplyr::mutate(
-      dplyr::across(
-        tidyselect::all_of(cols_str),
-        ~ forcats::fct_drop(forcats::as_factor(.))
-      )
-    )
-}
-
 #' Create Survey Design Object.
 #'
 #' This function wraps around survey::svydesign() to appropriately create a
