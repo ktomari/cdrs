@@ -13,5 +13,5 @@ cdrs_validate(path_)
 fl, a tibble, including file name, path, and type of data set.
 }
 \description{
-Checks and validates that the data stored in the given directory is valid according to the design of the DRS team. It should have three components, a csv, an excel file, and a txt file. This function is not usually called by the end-user, it is a dependency of drs_read.
+Checks and validates that the data stored in the given directory is valid according to the design of the DRS team. It should have three components, a csv, an excel file, and a txt file. This function is not usually called by the end-user, it is a dependency of cdrs_read.
 }

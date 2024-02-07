@@ -4,19 +4,19 @@
 \alias{cdrs_read}
 \title{Read the California Delta Residents Survey Dataset}
 \usage{
-cdrs_read(path_ = NULL, convert_to_NA = FALSE)
+cdrs_read(path_ = NULL, relevel_ = "default")
 }
 \arguments{
 \item{path_}{is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.}
 
-\item{convert_to_NA}{is a logical vector of length 1. Converts the variety of missingness levels (eg. <Decline to answer>) to \code{NA} values, simplifying calculations. Importantly, if there are columns that were originally factors (due to different missingness levels), but is principally a numeric column, this function will adjust these columns to type numeric.}
+\item{relevel_}{either a character or list. This parameter determines if the data should be 1) revised according to the "default" settings of \code{?cdrs_revise()}, which converts certain missing values like \if{html}{\out{<Missing>}} to \code{NA}; 2) remain untouched, "none", leaving it to the user to determine the correct factor levels; or 3) a list of logical values with the matching parameters of \code{cdrs_revise()}.}
 }
 \value{
 Returns a tibble of the Delta Residents Survey 2023 data set.
 }
 \description{
 Loads, validates, and corrects factor levels in the Delta Residents Survey
-2023 data. Depends on cdrs_as_NA, cdrs_validate.
+2023 data. Depends on cdrs_revise, cdrs_validate.
 }
 \examples{
 dat <- cdrs_read(
