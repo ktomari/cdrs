@@ -14,9 +14,100 @@ necessary_files <- data.frame(
 )
 
 # Used (potentially) for fpc
+# These values provided in MSG report on Weights.
 zone_N <- data.frame(
   Zone = factor(c(1, 2, 3)),
   N = c(11727, 540340, 166085)
 )
 
-usethis::use_data(necessary_files, zone_N, internal = T, overwrite = T)
+# Composite Index Frame
+# used in load_data > cdrs_composite_index
+composite_frame <- data.frame(
+  title = c(
+    "Sense of Place",
+    "Place Attachment",
+    "Place Identity & Meaning",
+    "Place dependence",
+    "Environmental Impacts Experienced",
+    "Overall Level of Climate Concern",
+    "Adaptive Capacity",
+    "Social Capital",
+    "Civic Engagement"
+  ),
+  index_name = c(
+    "idx_sop",
+    "idx_pa",
+    "idx_pim",
+    "idx_pd",
+    "idx_eie",
+    "idx_olcc",
+    "idx_ac",
+    "idx_sc",
+    "idx_ce"
+  ),
+  regex = c(
+    "^Q(3_[2345678])|(1_[12345])$",
+    "^Q3_(5|2|1)$",
+    "^Q(3_(7|8|6))|(1_3)$",
+    "^Q(3_(3|4))|(1_(2|4|5))$",
+    "Q12_[1234567]",
+    "Q13",
+    "Q24_(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15)",
+    "Q40_(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17)$",
+    "Q42(a|b|c|d|e|f|g|h)$"
+  ),
+  # ordered levels, comma separated values
+  # helps both re-order variables based on perceived scale (eg. Very Unlikely
+  # is now 0); and removes unwanted levels (in this case Uncertainty.)
+  ordered_levels_csv = c(
+    # "Sense of Place",
+    NA_character_,
+    # "Place Attachment",
+    NA_character_,
+    # "Place Identity & Meaning",
+    NA_character_,
+    # "Place dependence",
+    NA_character_,
+    # "Environmental Impacts Experienced",
+    NA_character_,
+    # "Overall Level of Climate Concern",
+    paste0(c("Not at all concerned",
+             "Somewhat concerned",
+             "Moderately concerned",
+             "Very concerned"),
+           collapse = ","),
+    # "Adaptive Capacity",
+    NA_character_,
+    # "Social Capital",
+    NA_character_,
+    # "Civic Engagement"
+    paste0(c("Very unlikely",
+             "Somewhat unlikely",
+             "Somewhat likely",
+             "Very likely"),
+           collapse = ",")
+  ),
+  ncol = c(
+    # "Sense of Place",
+    12,
+    # "Place Attachment",
+    3,
+    # "Place Identity & Meaning",
+    4,
+    # "Place dependence",
+    5,
+    # "Environmental Impacts Experienced",
+    7,
+    # "Overall Level of Climate Concern",
+    7,
+    # "Adaptive Capacity",
+    15,
+    # "Social Capital",
+    17,
+    # "Civic Engagement"
+    8
+  )
+)
+
+
+usethis::use_data(necessary_files, zone_N, composite_frame, internal = T, overwrite = T)
