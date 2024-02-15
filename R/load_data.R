@@ -348,7 +348,7 @@ cdrs_validate <- function(
 #' 2023 data. Depends on cdrs_revise, cdrs_validate.
 #'
 #' @param path_ is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.
-#' @param relevel_ either a character or list. This parameter determines if the data should be 1) revised according to the "default" settings of `?cdrs_revise()`, which converts certain missing values like <Missing> to `NA`; 2) remain untouched, "none", leaving it to the user to determine the correct factor levels; or 3) a list of logical values with the matching parameters of `cdrs_revise()`.
+#' @param relevel_ either a character or list. This parameter determines if the data should be 1) revised according to the `"default"` settings of `cdrs_revise()`, which converts certain missing values like <Missing> to `NA`; 2) remain untouched, `"none"`, leaving any corrections to factor levels for post-reading; or 3) a list of logical values with the matching parameters of `cdrs_revise()`.
 #' @return Returns a tibble of the Delta Residents Survey 2023 data set.
 #' @export
 #'
@@ -587,7 +587,7 @@ cdrs_read <- function(
 #' demo <- cdrs_read_example()
 cdrs_read_example <- function(
     relevel_ = "default") {
-  message("Loading fabricated DRS data.")
+  message("Loading fabricated DRS data. Do not draw conclusions from analyses on this synthesized data.")
   cdrs_read(
     path_ = system.file("extdata", "demo", package = "cdrs"),
     relevel_ = relevel_
@@ -619,7 +619,7 @@ cdrs_subset <- function(
   stopifnot(length(cols) > 0)
 
   # Convert symbols to strings
-  cols_str <- sapply(cols, function(x) as_string(x))
+  cols_str <- sapply(cols, function(x) rlang::as_string(x))
 
   sub_ <- data_ %>%
     # Select the variable(s) of interest, and the Zone and weights columns
@@ -629,4 +629,111 @@ cdrs_subset <- function(
 
   # return
   sub_
+}
+
+#' Create composite indices in the 2023 Summary Report.
+#'
+#' This function largely reproduces the composite indices created for the Summary Report (albeit with some corrections).
+#'
+#' @param data_ is the full DRS data set (created by `cdrs_read`).
+cdrs_composite_index <- function(
+    data_
+){
+  # work through each row of composite_frame (internal cdrs data)
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  idx <- purrr::pmap_dfc(composite_frame, function(...){
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # convert each row of composite_frame to a list
+    cols <- rlang::enexprs(...)
+
+    # get regular expression to match column names.
+    regex_ <- cols$regex
+
+    # subset data columns by regex.
+    # eg. a data.frame of Q42a, Q42b, etc.
+    sub_ <- data_ %>%
+      dplyr::select(tidyselect::matches(regex_))
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Error check: do we have all the columns we need?
+    stopifnot(ncol(sub_) == cols$ncol)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Create Index Score Vector
+    if(!is.na(cols$ordered_levels_csv)){
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Re-order levels & remove unwanted levels
+      # Then create score.
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      sub_ <- purrr::map(sub_, function(sub_col){
+        # ordered categorical variables
+        cats_ <- cols$ordered_levels_csv %>%
+          stringr::str_split_1(pattern = ",")
+
+        # Ensure sub_col is a factor
+        if (!is.factor(sub_col)) {
+          sub_col <- factor(sub_col)
+        }
+
+        # Filter out levels not in cats_ and convert them to NA
+        levels(sub_col) <- ifelse(
+          levels(sub_col) %in% cats_,
+          levels(sub_col),
+          NA)
+
+        # Update sub_col to have NA for values not in cats_
+        sub_col[!(sub_col %in% cats_)] <- NA
+
+        # Reorder the levels according to cats_
+        # This also adds any missing levels from cats_ as levels in sub_col
+        sub_col <- factor(sub_col, levels = cats_)
+
+        # Now convert each category to a number.
+        numeric_scores <- as.integer(sub_col) - 1
+      })
+
+      # Now, find the average score.
+      index_vec <- purrr::pmap_vec(sub_, function(...){
+        sub_cols <- rlang::enexprs(...)
+        avg <- mean(unlist(sub_cols), na.rm = T)
+
+        # return
+        if(identical(avg, NaN)){
+          NA_real_
+        } else {
+          avg
+        }
+      })
+    } else {
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Convert all dichotomous columns to score
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      index_vec <- purrr::pmap_vec(sub_, function(...){
+        cols <- rlang::enexprs(...)
+        # get a count of yes's
+        cnt <- stringr::str_which(unlist(cols), "Yes") %>%
+          length()
+
+        # return
+        if(identical(cnt, integer(0))){
+          NA_real_
+        } else {
+          cnt
+        }
+      })
+    }
+
+    out <- data.frame(
+      idx = index_vec
+    )
+
+    colnames(out) <- cols$index_name
+
+    # RETURN (map)
+    out
+  })
+
+  # RETURN (cdrs_composite_index)
+  data_ %>%
+    dplyr::bind_cols(idx)
 }
