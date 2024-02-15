@@ -82,3 +82,50 @@ cdrs_design <- function(
     )
   }
 }
+
+#' Run a 2-way weighted cross-tabulation on DRS data.
+#'
+#' @param data_ data.frame or tibble, the DRS data set.
+#' @param ... column names, quoted or not.
+#'
+#' @return xtabs object from svytable()
+#'
+#' @examples
+#' results <- cdrs_crosstab(data_ = cdrs_read_example(),
+#'                          AGE_P,
+#'                          Q1_1)
+#'
+#' contingency_table <- results$observed
+#'
+cdrs_crosstab <- function(
+    data_,
+    ...
+){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Require 2 column names
+  cols <- rlang::ensyms(...)
+  stopifnot(length(cols) == 2)
+
+  # Convert symbols to strings
+  cols_str <- sapply(cols, function(x) rlang::as_string(x))
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Subset
+  data_ <- cdrs_subset(data_, !!!cols_str)
+
+  # Complex survey design
+  design_ <- cdrs_design(data_, set_fpc = T)
+
+  # Perform contingency table
+  results <- survey::svyby(
+    formula = as.formula(paste0("~", cols_str[1])),
+    by = as.formula(paste0("~", cols_str[2])),
+    design = design_,
+    FUN = survey::svytotal,
+    keep.names = F,
+    na.rm = T
+  )
+
+  # return
+  results
+}
