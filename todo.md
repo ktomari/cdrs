@@ -4,16 +4,13 @@ This to-do list is not a wish list of desired features, but are rather issues th
 
 ## Documentation
 
-For the function `cdrs_as_NA` in load_data.R, I have a decision tree that needs to be presented in the documentation more clearly. Below I create a basic md table demonstrating decisions for non-design variables. Design variables include `WTFINAL` and `Zone`.
+Update documentation about MAR and other missingness in the missing data doc.
 
-| R Value | convert_as_NA = F | convert_as_NA = T |
-| ------- | ----------------- | ----------------- |
-| `NA` | As is. | As is. |
-| `<Decline to answer>` | As is, except brackets are dropped. | All `NA`. We convert these values to `NA` because respondents explicitly skipped the question they read. This implies a withholding of information that we treat as missing data. |
-| `<Not Applicable>` | For questions following `Q39` these values are converted to `NA` because respondents never read the question. For other questions, the angle brackets are dropped. | All of these values are converted to `NA`, otherwise functions like `svymean` would yield an error on a numeric variable. |
-| `<I don't know>` | As is, except brackets are dropped. | Although this provides relevant information on questions, indicating a respondent's uncertainty, if we are only interested in clear affirmative or negative response, we can safely mark this as `NA`. Given this complexity, a warning message will trigger, unless otherwise turned off. |
-| `<Missing>` |  As is, except brackets ar dropped. | `NA` |
-| `<Erased>` |  As is, except brackets ar dropped. | `NA` |
+## Function Features & Efficiency
+
+* load_data > cdrs_composite_index.
+    * This is too slow! Using base-R should improve speed.
+    * Determine if we want "uncertainty" levels in index scores that are a `mean()`. Current assumption: no. This is an error for idx_olcc in original code for summary report.
 
 ## Tests
 
