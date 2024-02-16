@@ -1,13 +1,29 @@
 # Functions that load or help load the DRS data; and functions that help revise or subset DRS data.
 
-#' Helper function to convert bracketed factor values to NA.
+#' Helper function to convert bracketed factor levels to NA.
+#'
+#' Helper function to convert bracketed factor levels (ie. missingness levels like <Decline to answer>) to `NA`.
 #'
 #' @param vec_ a factor vector.
 #' @param match_ a character vector of matching phrases.
 #' @return factor vector.
 #' @examples
-#' tmp <- factor(letters[1:5])
-#' convert_to_NA(tmp, c("a", "d"))
+#' input_vec <- factor(
+#'   c(
+#'     "Green",
+#'     "Red",
+#'     "<Decline to answer>",
+#'     "Green",
+#'     "<Decline to answer>",
+#'     "<I don't know>"
+#'    )
+#' )
+#'
+#' # Only return NA for "Decline to answer",
+#' # but not "I don't know"
+#' cdrs::matches_to_NA(input_vec, "Decline to answer")
+#'
+#' @noRd
 matches_to_NA <- function(
     vec_,
     match_ = NULL
@@ -521,7 +537,7 @@ cdrs_read <- function(
   # Convert Levels ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  if(class(relevel_) == "character"){
+  if(inherits(relevel_, "character")){
     if (relevel_ == "default" ) {
       # Convert <Missingness> to NA
       data <- cdrs_revise(
@@ -538,7 +554,7 @@ cdrs_read <- function(
         preserve_editorials = T
       )
     }
-  } else if(class(relevel_) == "list"){
+  } else if(inherits(relevel_, "list")){
     # Format data using provided list.
     data <- do.call(
       # apply cdrs_revise function...

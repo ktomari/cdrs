@@ -89,11 +89,13 @@ cdrs_design <- function(
 #' @param cols_ a character vector of column names.
 #'
 #' @return xtabs object from svytable()
+#' @export
 #'
 #' @examples
-#' results <- cdrs_crosstab(data_ = cdrs_read_example(),
-#'                          c("AGE_P",
-#'                          "Q1_1"))
+#' results <- cdrs::cdrs_crosstab(
+#'      data_ = cdrs::cdrs_read_example(),
+#'      cols_ = c("AGE_P", "Q1_1")
+#'      )
 cdrs_crosstab <- function(
     data_,
     cols_
@@ -108,8 +110,8 @@ cdrs_crosstab <- function(
 
   # Perform contingency table
   results <- survey::svyby(
-    formula = as.formula(paste0("~", cols_[1])),
-    by = as.formula(paste0("~", cols_[2])),
+    formula = stats::as.formula(paste0("~", cols_[1])),
+    by = stats::as.formula(paste0("~", cols_[2])),
     design = design_,
     FUN = survey::svytotal,
     keep.names = F,
