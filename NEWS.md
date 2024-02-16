@@ -14,7 +14,7 @@ We had to update how `survey.design` objects were stored as snapshots using {tes
 
 ## Survey wrappers
 
-The intent here is to replicate some of the functions used to create the 2023 Summary Report. These functions are meant to demonstrate how to correctly define parameters for functions from the {survey} package. Otherwise, they aren't really special (ie. they don't fundamentally do anything you couldn't do with {survey} functions before). These wrappers serve both as teaching tools (ie. what bespoke parameters are appropriate for the DRS data set) and hopefully reduce user error by automated much of the complex analytical survey specifications. The next "minor" update will be registered once these wrapper functions are completed.
+The intent here is to replicate some of the functions used to create the 2023 Summary Report. These functions are meant to demonstrate how to correctly define parameters for functions from the {survey} package. Otherwise, they aren't really special (ie. they don't fundamentally do anything you couldn't do with {survey} functions before). These wrappers serve both as teaching tools (ie. what bespoke parameters are appropriate for the DRS data set) and hopefully reduce user error by automating much of the complex analytical survey specifications. The next "minor" update will be registered once these wrapper functions are completed.
 
 # cdrs 0.1.0
 
