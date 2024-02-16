@@ -599,7 +599,7 @@ cdrs_read_example <- function(
 #' Subsets data and removes missing values.
 #'
 #' @param data_ is the complete DRS dataset.
-#' @param ... either a character vector of or unquoted column names.
+#' @param cols_ a character vector of column names.
 #'
 #' @export
 #' @examples
@@ -608,22 +608,18 @@ cdrs_read_example <- function(
 #'   Zone = c(1, 2, 3),
 #'   WTFINAL = c(.8, 1, 1.2)
 #' )
-#' drs_subset <- cdrs_subset(data_ = df, Q1)
+#' drs_subset <- cdrs_subset(data_ = df, "Q1")
 cdrs_subset <- function(
     data_,
-    ...
+    cols_
 ) {
 
   # Require at least one column name
-  cols <- rlang::ensyms(...)
-  stopifnot(length(cols) > 0)
-
-  # Convert symbols to strings
-  cols_str <- sapply(cols, function(x) rlang::as_string(x))
+  stopifnot(length(cols_) > 0)
 
   sub_ <- data_ %>%
     # Select the variable(s) of interest, and the Zone and weights columns
-    dplyr::select(dplyr::all_of(cols_str), Zone, WTFINAL) %>%
+    dplyr::select(dplyr::all_of(cols_), Zone, WTFINAL) %>%
     # Remove NA values from design columns: strata, weights
     dplyr::filter(!is.na(WTFINAL) & !is.na(Zone))
 

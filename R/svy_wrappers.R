@@ -86,28 +86,34 @@ cdrs_design <- function(
 #' Run a 2-way weighted cross-tabulation on DRS data.
 #'
 #' @param data_ data.frame or tibble, the DRS data set.
-#' @param ... column names, quoted or not.
+#' @param cols_ a character vector of column names.
 #'
 #' @return xtabs object from svytable()
 #'
 #' @examples
 #' results <- cdrs_crosstab(data_ = cdrs_read_example(),
-#'                          AGE_P,
-#'                          Q1_1)
-#'
-#' contingency_table <- results$observed
-#'
+#'                          c("AGE_P",
+#'                          "Q1_1"))
 cdrs_crosstab <- function(
     data_,
-    ...
+    cols_
 ){
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Require 2 column names
-  cols <- rlang::ensyms(...)
-  stopifnot(length(cols) == 2)
+  # Capture all ... arguments into a list
+  dots <- list(...)
 
-  # Convert symbols to strings
-  cols_str <- sapply(cols, function(x) rlang::as_string(x))
+  # Use lapply to process each element
+  cols_processed <- lapply(dots, function(dot) {
+    if (is.character(dot)) {
+      # Return character vector as is
+      return(dot)
+    } else {
+      # Convert symbols or quoted text to character
+      return(rlang::as_string(rlang::ensym(dot)))
+    }
+  })
+
+  # Unlist to flatten the list into a character vector and ensure unique elements
+  cols_str <- unique(unlist(cols_processed))
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Subset
