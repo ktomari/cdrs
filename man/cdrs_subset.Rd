@@ -4,12 +4,12 @@
 \alias{cdrs_subset}
 \title{Prepare and subset DRS data for use with cdrs_design().}
 \usage{
-cdrs_subset(data_, ...)
+cdrs_subset(data_, cols_)
 }
 \arguments{
 \item{data_}{is the complete DRS dataset.}
 
-\item{...}{either a character vector of or unquoted column names.}
+\item{cols_}{a character vector of column names.}
 }
 \description{
 Subsets data and removes missing values.
@@ -20,5 +20,5 @@ df <- data.frame(
   Zone = c(1, 2, 3),
   WTFINAL = c(.8, 1, 1.2)
 )
-drs_subset <- cdrs_subset(data_ = df, Q1)
+drs_subset <- cdrs_subset(data_ = df, "Q1")
 }

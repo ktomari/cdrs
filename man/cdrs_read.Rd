@@ -9,7 +9,7 @@ cdrs_read(path_ = NULL, relevel_ = "default")
 \arguments{
 \item{path_}{is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.}
 
-\item{relevel_}{either a character or list. This parameter determines if the data should be 1) revised according to the "default" settings of \code{?cdrs_revise()}, which converts certain missing values like \if{html}{\out{<Missing>}} to \code{NA}; 2) remain untouched, "none", leaving it to the user to determine the correct factor levels; or 3) a list of logical values with the matching parameters of \code{cdrs_revise()}.}
+\item{relevel_}{either a character or list. This parameter determines if the data should be 1) revised according to the \code{"default"} settings of \code{cdrs_revise()}, which converts certain missing values like \if{html}{\out{<Missing>}} to \code{NA}; 2) remain untouched, \code{"none"}, leaving any corrections to factor levels for post-reading; or 3) a list of logical values with the matching parameters of \code{cdrs_revise()}.}
 }
 \value{
 Returns a tibble of the Delta Residents Survey 2023 data set.
