@@ -1,22 +1,14 @@
 # svydesign w/ fpc works with example
 
     Code
-      cdrs_design(data_ = demo, set_fpc = T)
+      serialized
     Output
-      Stratified Independent Sampling design
-      survey::svydesign(
-            # This arg specifies cluster ids. In our case, the DRS has no clusters.
-            ids = ~1,
-            # Here we set the finite population correction, which *may* matter only
-            # in cases where Zone 1 residents are of concern. See docs.
-            fpc = ~N,
-            # The cleaned data set, including the removal of missing values.
-            data = data_,
-            # Specify the strata (in our case Zone geographies)
-            strata = ~Zone,
-            # Specify the column with weights.
-            weights = ~WTFINAL
-          )
+          Q3_5 Zone   WTFINAL      N    probs
+      68   Yes    2 0.9279586 540340 1.077634
+      167   No    2 0.9430934 540340 1.060340
+      129  Yes    3 0.9035757 166085 1.106714
+      162   No    1 0.8974757  11727 1.114236
+      43    No    3 0.2189963 166085 4.566287
 
 # crosstab w/ works with example
 
