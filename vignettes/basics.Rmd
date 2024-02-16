@@ -19,7 +19,7 @@ Here are the packages this vignette relies upon. In order to use the DRS data, y
 ```{r setup, message = F}
 library(cdrs)
 library(survey)
-library(tidyverse)
+library(dplyr)
 ```
 
 ## Introduction
@@ -58,7 +58,7 @@ In order to mitigate bias and correctly estimate population statistics and error
 We begin by subsetting the data. Nothing fancy is happening in this subset, other than we are making sure no `NA` values appear in the survey design variables: `Zone` and `WTFINAL`.
 
 ```{r}
-sub1 <- cdrs_subset(dat1, Q2)
+sub1 <- cdrs_subset(dat1, "Q2")
 
 # create design survey design object.
 des <- cdrs_design(data_ = sub1, set_fpc = T)
