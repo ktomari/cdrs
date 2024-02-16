@@ -98,34 +98,18 @@ cdrs_crosstab <- function(
     data_,
     cols_
 ){
-  # Capture all ... arguments into a list
-  dots <- list(...)
-
-  # Use lapply to process each element
-  cols_processed <- lapply(dots, function(dot) {
-    if (is.character(dot)) {
-      # Return character vector as is
-      return(dot)
-    } else {
-      # Convert symbols or quoted text to character
-      return(rlang::as_string(rlang::ensym(dot)))
-    }
-  })
-
-  # Unlist to flatten the list into a character vector and ensure unique elements
-  cols_str <- unique(unlist(cols_processed))
-
+  stopifnot(length(cols_) == 2 & class(cols_) == "character")
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Subset
-  data_ <- cdrs_subset(data_, !!!cols_str)
+  data_ <- cdrs_subset(data_, cols_)
 
   # Complex survey design
   design_ <- cdrs_design(data_, set_fpc = T)
 
   # Perform contingency table
   results <- survey::svyby(
-    formula = as.formula(paste0("~", cols_str[1])),
-    by = as.formula(paste0("~", cols_str[2])),
+    formula = as.formula(paste0("~", cols_[1])),
+    by = as.formula(paste0("~", cols_[2])),
     design = design_,
     FUN = survey::svytotal,
     keep.names = F,
