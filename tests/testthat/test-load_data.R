@@ -81,7 +81,7 @@ test_that("basic data subset with unquoted var", {
 
   # test
   expect_identical(
-    cdrs_subset(data_ = input_df, Q1),
+    cdrs_subset(data_ = input_df, "Q1"),
     expected_df
   )
 })

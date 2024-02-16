@@ -18,3 +18,12 @@
             weights = ~WTFINAL
           )
 
+# crosstab w/ works with example
+
+    Code
+      cdrs_crosstab(data_ = demo, cols_ = c("SEX_P", "Q3_5"))
+    Output
+        Q3_5 SEX_PFemale SEX_PMale se.SEX_PFemale se.SEX_PMale
+      1   No    64.97260  31.05917      15.779190     9.560387
+      2  Yes    29.26014  30.59424       8.187815     8.542056
+
