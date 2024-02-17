@@ -2,7 +2,7 @@
 
 In an effort to reach our next minor update, we're trying to stabilize and make evergreen the parameters for existing functions, adding more robust tests, and adding {survey} function wrappers. Strictly speaking, we have indeed added new functionality, but the "feature" we're building up to is not complete (ie. replicating the Summary Report), so this is why it is a (big) patch and not a minor update.
 
-## Evergeen Arguments
+## Evergreen Arguments
 
 We changed functions that took `...` arguments since it was clear that it would be difficult or impossible to specify a character vector. This would have forced users to use NSE just to run batch operations on functions like `cdrs_subset`. Now, users are expected to submit a character vector. 
 
