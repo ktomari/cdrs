@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The package {cdrs} (pronounced "cedars") includes functions to aid researchers in analyzing the California Delta Residents Survey (CDRS) of 2023. While some examples of the functions available in this package are demonstrated below, the core set of [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_cdrs_package.html) is available on the [DRS GitHub homepage](https://ktomari.github.io/DeltaResidentsSurvey/). A guide to install this package is provided in the following section.
+The package {cdrs} (pronounced "cedars") includes functions to aid researchers in analyzing the California Delta Residents Survey (CDRS) of 2023. Please review the [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_cdrs_package.html) which is available on the [DRS GitHub homepage](https://ktomari.github.io/DeltaResidentsSurvey/). A guide to install this package is provided in the following section.
 
 *This document was last updated on `r format(Sys.time(), '%B %d, %Y')`.*
 
@@ -30,73 +30,6 @@ You can install the development version of cdrs from [GitHub](https://github.com
 # install.packages("devtools")
 devtools::install_github("ktomari/cdrs")
 ```
-
-## Examples
-
-In the code below, we make use of a few packages. The only package you need to start analyzing the CDRS is our package, but for the sake of clarity, here is the list of packages in the examples below:
-
-* tidyverse
-* kableExtra
-* cdrs
-
-```{r useful_packages, include = F}
-# For quick data manipulation.
-library(tidyverse)
-
-# For printing tables here.
-library(kableExtra)
-
-# For the reading Delta Residents Survey data.
-library(cdrs)
-```
-
-## Example: Reading Example Data
-
-The primary R function for reading DRS data into your R environment is `cdrs_read()`, however if you don't immediately have access to the [public data set](https://doi.org/10.3886/E195447V1) (or a collaborator data set), you can still test it with this wrap-around function `cdrs_read_example()`. This loads a fabricated data set that is configured to look like the public data set circa December 2023. This fabricated data set is in the package directory `/extdata/demo`.
-
-First, we'll see what the data set looks like with the varying types of 'missing values', which include things like `<Decline to answer>` that means respondents read the question, but declined to select a response, or enter anything in text entry field. A full list of possible '[missing values](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html#the-schema-of-the-drs-data-product)' is available in our documentation.
-
-```{r}
-dat1 <- cdrs::cdrs_read_example()
-
-dat1 %>%
-  head() %>%
-  knitr::kable(format = "markdown")
-```
-
-While the example above demonstrates a greater level of detail around how respondents *did not* engage a survey question, it is not altogether helpful for understanding generative engagements (ie. those responses that selected a given option). In practical terms, it is difficult to plot responses from the code chunk above because it involves additional categories in which we may have no interest. If our objective is to better understand how residents think about an issue, then we might want to convert all 'missing values' to the R value `NA`. This allows plotting packages like {ggplot2} to handle these responses in one broad grouping, which better illustrates generative engagements. Below, we convert 'missing values' to `NA` using the argument `convert_to_NA`.
-
-```{r}
-dat2 <- cdrs::cdrs_read_example(convert_to_NA = T)
-
-dat2 %>%
-  head() %>%
-  knitr::kable(format = "markdown")
-```
-
-### Example: `cdrs_as_NA`
-
-While the function `cdrs_as_NA` is rarely called on its own, we'll take a look at it because it maybe useful after you've read the data into your R environment. This component allows us to convert 'missing values' to `NA`.
-
-First, we'll need a sample from the data set.
-
-```{r data_sample}
-data <- data.frame(
-  DRS_ID = paste0("DRS", 2:6),
-  Q2 = c("<I don't know>", rep("Historic or Delta \"legacy\" town", 4))
-)
-
-data %>%
-  knitr::kable(format = "markdown")
-```
-
-Now compare the table above with the one outputted below.
-
-```{r basics1}
-cdrs_as_NA(data) %>%
-  knitr::kable(format = "markdown")
-```
-
 
 ## Acknowledgements
 
