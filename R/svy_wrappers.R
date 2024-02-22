@@ -37,13 +37,13 @@
 #' @examples
 #' df <- data.frame(
 #'   Q0_0 = c("1", NA, "3"),
-#'   Zone = c(1, 1, 2),
+#'   Zone = factor(c(1, 1, 2)),
 #'   WTFINAL = c(1.32, 0.83, 0.98)
 #' )
 #' cdrs_design(df)
 cdrs_design <- function(
     data_,
-    set_fpc = F) {
+    set_fpc = T) {
   stopifnot(
     ("Zone" %in% names(data_)) | ("WTFINAL" %in% names(data_))
   )
@@ -87,8 +87,9 @@ cdrs_design <- function(
 #'
 #' @param data_ data.frame or tibble, the DRS data set.
 #' @param cols_ a character vector of column names.
+#' @param set_fpc logical. `NULL` defaults to the default of `cdrs_design`. See documentation on `cdrs_design`.
 #'
-#' @return xtabs object from svytable()
+#' @return svyby object
 #' @export
 #'
 #' @examples
@@ -98,7 +99,8 @@ cdrs_design <- function(
 #'      )
 cdrs_crosstab <- function(
     data_,
-    cols_
+    cols_,
+    set_fpc = NULL
 ){
   stopifnot(length(cols_) == 2 & class(cols_) == "character")
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,7 +108,11 @@ cdrs_crosstab <- function(
   data_ <- cdrs_subset(data_, cols_)
 
   # Complex survey design
-  design_ <- cdrs_design(data_, set_fpc = T)
+  if(is.null(set_fpc)){
+    design_ <- cdrs_design(data_)
+  } else {
+    design_ <- cdrs_design(data_, set_fpc = set_fpc)
+  }
 
   # Perform contingency table
   results <- survey::svyby(
@@ -120,4 +126,105 @@ cdrs_crosstab <- function(
 
   # return
   results
+}
+
+#' Calculates CDRS survey variable proportion.
+#'
+#' This function is a wraparound function for survey::svymean. By default, it produces a tibble with the mean and standard error (calculated by linearization, see {survey} package for more details). Alternatively, return the 'svystat' object, which is simply the object yielded by survey::svymean.
+#'
+#' @param data_ is a tibble/data.frame of the DRS data set.
+#' @param col_ is a character vector, with the column of interest.
+#' @param return_stat is logical. Determines whether a tibble of proportions are returned, or if the "svystat" object is returned. In the latter case, {stats} functions like `confint` can be used on the "svystat" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svystat" object and its "methods" (ie. functions associated with this class of objects).
+#' @return either a tibble or svystat object.
+#' @export
+#'
+#' @examples
+#' dat <- cdrs_read_example()
+#' # numeric column
+#' numeric_mean_tb <- cdrs_props(dat, "Q1a")
+#' # single-response multiple choice
+#' single_response_tb <- cdrs_props(dat, "Q2")
+cdrs_props <- function(
+    data_,
+    col_,
+    return_stat = FALSE
+    ){
+  # ~~~~~~~~~~~~~~~~
+  # Error check
+  stopifnot(length(col_) == 1 &
+              is(col_, "character"))
+
+  # ~~~~~~~~~~~~~~~~
+  # create survey design
+  design_ <- cdrs_design(data_ = data_, set_fpc = F)
+
+  # ~~~~~~~~~~~~~~~~
+  # get proportions
+  props_ <- survey::svymean(x = as.formula(paste0(
+    "~",
+    stringr::str_glue("`{col_}`")
+  )),
+  design = design_,
+  na.rm = T)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # We don't want the svystat object,
+  # we want a nicely formatted tibble.
+  if(!return_stat){
+    # confusingly, names() on svystat object returns
+    # either the variable name + factors or just the variable name,
+    # ie. not column names.
+    # So, for instance, we might see "Q1_1Yes",
+    # or for numeric columns just, "Q1a"
+    rownm <- names(props_)
+
+    # Test if rownames are simply the variable, `col_`.
+    # In essence this test allows us to see if there are factor levels.
+    if(identical(rownm, col_)){
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # col_ is the same as the rowname of props_.
+      # In other words, we have no factor levels.
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      props_ <- tibble::tibble(
+        variable = col_,
+        mean = coef(props_),
+        SE = survey::SE(props_) %>%
+          as.vector()
+      ) %>%
+        mutate(percent = round(mean * 100)) %>%
+        mutate(percent = paste0(percent, "%"))
+
+    } else {
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # the rownames contain factor levels
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      props_ <- tibble::tibble(
+        variable = col_,
+        levels = names(coef(props_)),
+        mean = coef(props_),
+        SE = survey::SE(props_) %>%
+          as.vector()
+      ) %>%
+        # remove any backticks
+        mutate(levels = stringr::str_remove_all(
+          string = levels,
+          pattern = '`')
+        ) %>%
+        # remove the col_ name, eg. "Q1_1",
+        # from the factor levels, eg. "No" and "Yes"
+        mutate(levels:= stringr::str_remove(
+          string = levels, pattern = col_) %>%
+            # convert to a factor
+            forcats::as_factor()
+        ) %>%
+        mutate(percent = round(mean * 100)) %>%
+        mutate(percent = paste0(percent, "%"))
+
+    }  # end if(identical(rownm, col_)){
+
+  }  # end if(!return_stat){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # return
+  props_
 }
