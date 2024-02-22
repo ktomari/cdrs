@@ -3,7 +3,7 @@
     Code
       cdrs_read_example()
     Message
-      Loading fabricated DRS data. Do not draw conclusions from analyses on this synthesized data.
+      Loading fabricated DRS data. Do not draw conclusions from analyses of this synthesized data.
     Output
       # A tibble: 200 x 148
          DRS_ID  DistributionChannel UserLanguage geoid.county Zone  Q1_0  Q1_1  Q1_2 

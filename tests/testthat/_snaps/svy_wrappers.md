@@ -1,4 +1,4 @@
-# svydesign w/ fpc works with example
+# svydesign. w/ fpc works with example
 
     Code
       serialized
@@ -10,10 +10,10 @@
       162   No    1 0.8974757  11727 1.114236
       43    No    3 0.2189963 166085 4.566287
 
-# crosstab w/ works with example
+# crosstab. w/ works with example
 
     Code
-      cdrs_crosstab(data_ = demo, cols_ = c("SEX_P", "Q3_5"))
+      cdrs_crosstab(data_ = demo, cols_ = c("SEX_P", "Q3_5"), set_fpc = T)
     Output
         Q3_5 SEX_PFemale SEX_PMale se.SEX_PFemale se.SEX_PMale
       1   No    64.97260  31.05917      15.779190     9.560387

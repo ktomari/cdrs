@@ -57,7 +57,7 @@ test_that("NA conversions work", {
   )
 })
 
-test_that("basic data subset with unquoted var", {
+test_that("basic data subset with quoted var", {
   # create input data.frame
   input_df <- data.frame(
     Q1 = factor(c("Y", NA, "N", "Y")),
