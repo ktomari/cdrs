@@ -27,7 +27,9 @@ Imports:
     tidyselect,
     utils
 Suggests: 
+    ggplot2,
     knitr,
+    rcartocolor,
     rmarkdown,
     testthat (>= 3.0.0),
     withr
