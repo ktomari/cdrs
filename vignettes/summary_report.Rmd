@@ -1,0 +1,109 @@
+---
+title: "Summary Report"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{summary_report}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(cdrs)
+```
+
+This document is a work in progress. The purpose of this document is to replicate the functions used in the Summary Report 2023, available on the [California Delta Residents Survey website](https://ktomari.github.io/DeltaResidentsSurvey/). However, since the public data set is not included with the {cdrs} package, we use the fabricated data set instead. As such, you'll see uniform distributions, not the actual results of the survey!
+
+If you replace the data in this document with the public data set, you will still observe different results from the Summary Report 2023 for a few reasons: 1) The public data set is different: its lacking some of the variables used in report, such as a finer level of geographic detail; 2) Some errors in the code used to create the summary report have been amended. At the time of this writing, no major issues have been observed. What errors do appear will be added to the report's errata on the website.
+
+## Data Setup
+
+```{r}
+# Load the fabricated data set.
+fabricated_data <- cdrs_read_example()
+```
+
+## Characteristics of Survey Respondents
+
+*Pages 21-22*
+
+### Gender
+
+The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column.
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "SEX_P"
+)
+```
+
+### Age
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "AGE_P"
+)
+```
+
+### Race
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "RACE_P"
+)
+```
+
+### Education
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "EDU_P"
+)
+```
+
+### Income
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "INCOME_P"
+)
+```
+
+### Home Ownership
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "HOMEOWNERSHIP_P"
+)
+```
+
+### Residential Designation
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "Q2"
+)
+```
+
+### Political ideology
+
+```{r}
+cdrs_pie(
+  data_ = fabricated_data,
+  col_ = "Q34"
+)
+```
+

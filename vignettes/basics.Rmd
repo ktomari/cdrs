@@ -14,11 +14,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-Here are the packages this vignette relies upon. In order to use the DRS data, you only need the first two. We will use the tidyverse family of functions to explore the data.
+Here are the packages this vignette relies upon. In order to use the DRS data, you only need the first two. We will also make use of some tidyverse family of functions to explore the data.
 
 ```{r setup, message = F}
 library(cdrs)
 library(survey)
+# tidyverse packages:
 library(dplyr)
 ```
 
@@ -35,6 +36,9 @@ In the example below, we're going to access the fabricated data set that comes w
 ```{r}
 # record the file path to the data.
 path_ <- system.file("extdata/demo", package = "cdrs")
+# Under normal circumstances (ie. when you're working the real CDRS data set),
+# your `path_` will be a single string, for example:
+# path_ <- "~/Documents/drs/DRS public data_2023_12_01.zip"
 
 # read the data.
 dat1 <- cdrs_read(path_ = path_)
@@ -51,13 +55,14 @@ dat1 <- cdrs_read_example()
 
 ## Complex Survey Design
 
-The Delta Residents Survey is an example of a survey that uses complex survey design. Such an approach changes our approach to estimating population statistics and affect the sizes of our standard errors. Read more about this in our [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_weights.html).
+The Delta Residents Survey is an example of a survey that uses complex survey design. Such an approach changes our approach to estimating population statistics and this affects our standard errors. Read more about this in our [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_weights.html).
 
-In order to mitigate bias and correctly estimate population statistics and errors, and accommodate our survey's use of stratification and post-hoc weights, we need to begin by specifying a "survey design object." This is where the Thomas Lumley's {survey} package shines! Normally, you would have to call `survey::svydesign()` and specify it, but we do that for you. The only thing you have to decide is whether or not to include a finite population correction (fpc). In practice we observed no real differences, probably because our survey sample was sufficiently small relative to the total population.
+In order to mitigate bias and correctly estimate population statistics and errors, and accommodate our survey's use of stratification and post-hoc weights, we need to begin by specifying a "survey design object." This is where Thomas Lumley's {survey} package shines! Normally, you would have to call `survey::svydesign()` and specify it, but we do the specification for you. The only thing you have to decide is whether or not to include a finite population correction (fpc). In practice we observed no real differences, probably because our survey sample was sufficiently small relative to the total population.
 
 We begin by subsetting the data. Nothing fancy is happening in this subset, other than we are making sure no `NA` values appear in the survey design variables: `Zone` and `WTFINAL`.
 
 ```{r}
+# Create a subset of the data with columns: Q2, Zone, and WTFINAL
 sub1 <- cdrs_subset(dat1, "Q2")
 
 # create design survey design object.
