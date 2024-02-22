@@ -4,13 +4,15 @@
 \alias{cdrs_read_example}
 \title{Load fabricated example data.}
 \usage{
-cdrs_read_example(relevel_ = "default")
+cdrs_read_example(relevel_ = "default", return_dict = FALSE)
 }
 \arguments{
 \item{relevel_}{character or list. See documentation for \code{?cdrs_read()}.}
+
+\item{return_dict}{logical. See documentation for \code{?cdrs_read()}}
 }
 \value{
-Returns a tibble of the a fictitious data set.
+Returns a tibble of the a fabricated data set, or a list with the fabricated data set and the data dictionary.
 }
 \description{
 Using cdrs::cdrs_read(), loads demo data (inside extdata/demo). Do not draw

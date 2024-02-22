@@ -4,7 +4,7 @@
 \alias{cdrs_design}
 \title{Create Survey Design Object.}
 \usage{
-cdrs_design(data_, set_fpc = F)
+cdrs_design(data_, set_fpc = T)
 }
 \arguments{
 \item{data_}{A tibble or data.frame which contains the columns/variables of
@@ -48,7 +48,7 @@ the project documentation.
 \examples{
 df <- data.frame(
   Q0_0 = c("1", NA, "3"),
-  Zone = c(1, 1, 2),
+  Zone = factor(c(1, 1, 2)),
   WTFINAL = c(1.32, 0.83, 0.98)
 )
 cdrs_design(df)

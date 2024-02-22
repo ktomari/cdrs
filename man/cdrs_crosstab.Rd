@@ -4,15 +4,17 @@
 \alias{cdrs_crosstab}
 \title{Run a 2-way weighted cross-tabulation on DRS data.}
 \usage{
-cdrs_crosstab(data_, cols_)
+cdrs_crosstab(data_, cols_, set_fpc = NULL)
 }
 \arguments{
 \item{data_}{data.frame or tibble, the DRS data set.}
 
 \item{cols_}{a character vector of column names.}
+
+\item{set_fpc}{logical. \code{NULL} defaults to the default of \code{cdrs_design}. See documentation on \code{cdrs_design}.}
 }
 \value{
-xtabs object from svytable()
+svyby object
 }
 \description{
 Run a 2-way weighted cross-tabulation on DRS data.
