@@ -137,6 +137,7 @@ cdrs_crosstab <- function(
 #' @param return_stat is logical. Determines whether a tibble of proportions are returned, or if the "svystat" object is returned. In the latter case, {stats} functions like `confint` can be used on the "svystat" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svystat" object and its "methods" (ie. functions associated with this class of objects).
 #' @return either a tibble or svystat object.
 #' @export
+#' @importFrom methods is
 #'
 #' @examples
 #' dat <- cdrs_read_example()
@@ -160,7 +161,7 @@ cdrs_props <- function(
 
   # ~~~~~~~~~~~~~~~~
   # get proportions
-  props_ <- survey::svymean(x = as.formula(paste0(
+  props_ <- survey::svymean(x = stats::as.formula(paste0(
     "~",
     stringr::str_glue("`{col_}`")
   )),
@@ -187,12 +188,12 @@ cdrs_props <- function(
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       props_ <- tibble::tibble(
         variable = col_,
-        mean = coef(props_),
+        mean = stats::coef(props_),
         SE = survey::SE(props_) %>%
           as.vector()
       ) %>%
         mutate(percent = round(mean * 100)) %>%
-        mutate(percent = paste0(percent, "%"))
+        mutate(percent_lab = paste0(percent, "%"))
 
     } else {
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,8 +201,8 @@ cdrs_props <- function(
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       props_ <- tibble::tibble(
         variable = col_,
-        levels = names(coef(props_)),
-        mean = coef(props_),
+        levels = names(stats::coef(props_)),
+        mean = stats::coef(props_),
         SE = survey::SE(props_) %>%
           as.vector()
       ) %>%
@@ -218,7 +219,7 @@ cdrs_props <- function(
             forcats::as_factor()
         ) %>%
         mutate(percent = round(mean * 100)) %>%
-        mutate(percent = paste0(percent, "%"))
+        mutate(percent_lab = paste0(percent, "%"))
 
     }  # end if(identical(rownm, col_)){
 
