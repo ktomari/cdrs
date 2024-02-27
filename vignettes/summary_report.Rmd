@@ -38,7 +38,7 @@ fabricated_data <- cdrs_read_example()
 The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column.
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "SEX_P"
 )
@@ -47,7 +47,7 @@ cdrs_pie(
 ### Age
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "AGE_P"
 )
@@ -56,7 +56,7 @@ cdrs_pie(
 ### Race
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "RACE_P"
 )
@@ -65,7 +65,7 @@ cdrs_pie(
 ### Education
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "EDU_P"
 )
@@ -74,7 +74,7 @@ cdrs_pie(
 ### Income
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "INCOME_P"
 )
@@ -83,7 +83,7 @@ cdrs_pie(
 ### Home Ownership
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "HOMEOWNERSHIP_P"
 )
@@ -92,7 +92,7 @@ cdrs_pie(
 ### Residential Designation
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "Q2"
 )
@@ -101,7 +101,7 @@ cdrs_pie(
 ### Political ideology
 
 ```{r}
-cdrs_pie(
+cdrs_plt_pie(
   data_ = fabricated_data,
   col_ = "Q34"
 )
