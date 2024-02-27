@@ -9,6 +9,9 @@ cdrs_composite_index(data_)
 \arguments{
 \item{data_}{is the full DRS data set (created by \code{cdrs_read}).}
 }
+\value{
+A tibble. the full DRS data set + composite scores.
+}
 \description{
 This function largely reproduces the composite indices created for the Summary Report (albeit with some corrections).
 }
