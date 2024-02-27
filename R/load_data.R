@@ -587,7 +587,7 @@ cdrs_read <- function(
   if(return_dict){
     list(
       data = data,
-      dd = dd
+      dict = dd
     )
   } else {
     data
