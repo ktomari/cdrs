@@ -38,6 +38,8 @@ cdrs_subset <- function(
 #' This function largely reproduces the composite indices created for the Summary Report (albeit with some corrections).
 #'
 #' @param data_ is the full DRS data set (created by `cdrs_read`).
+#' @return A tibble. the full DRS data set + composite scores.
+#' @export
 cdrs_composite_index <- function(
     data_
 ){
