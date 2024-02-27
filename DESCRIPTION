@@ -16,6 +16,7 @@ Imports:
     dplyr,
     forcats,
     magrittr,
+    methods,
     purrr,
     readr,
     readxl,
