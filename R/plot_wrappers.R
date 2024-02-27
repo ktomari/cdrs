@@ -96,8 +96,8 @@ get_unwt_props <- function(
 #'
 #' @examples
 #' dat <- cdrs_read_example()
-#' cdrs_pie(dat, "Q2")
-cdrs_pie <- function(
+#' cdrs_plt_pie(dat, "Q2")
+cdrs_plt_pie <- function(
     data_,
     col_,
     weighted_ = TRUE,
@@ -136,8 +136,9 @@ cdrs_pie <- function(
         fill = levels
       )) +
     # position_stack reverse = T is needed for text labeling to work
-    ggplot2::geom_col(position = ggplot2::position_stack(reverse = TRUE),
-             width = 1) +
+    ggplot2::geom_col(
+      position = ggplot2::position_stack(reverse = TRUE),
+      width = 1) +
     # ggplot2::geom_col(width = 1) +
     ggplot2::geom_label(
       ggplot2::aes(label = percent),
@@ -164,3 +165,96 @@ cdrs_pie <- function(
       panel.background = ggplot2::element_rect(fill = "white"))
 
 }
+
+#' Dichotomous Question Bar Plots.
+#'
+#' Plot questions from the DRS data set with only one level of interest (eg. questions where we only want to show "Yes" responses).
+#'
+#' @param data_ the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.
+#' @param cols_ column name(s) (as a character vector)
+#' @param level_ character.
+#' @return an object of class ggplot.
+#' @export
+cdrs_plt_bar <- function(
+    data_,
+    cols_,
+    level_
+    # remove_angle_brackets = TRUE
+){
+  stopifnot(length(level_) == 1)
+
+  # run these columns through cdrs_props()
+  props_ <- purrr::map_dfr(cols_,
+                       ~cdrs_props(data_ = data_,
+                                   col_ = .x))
+
+  # we only want "Yes" for bar plots (generally speaking)
+  props_ <- props_ %>%
+    dplyr::filter(levels == !!level_)
+
+  ggplot2::ggplot(
+    data = props_,
+    mapping = ggplot2::aes(
+      x = percent,
+      y = variable
+    )) +
+    ggplot2::geom_bar(
+      stat = "identity"
+    ) +
+    # Scale
+    ggplot2::scale_x_continuous(limits = c(0,100),
+                                # expand = expansion(mult = c(0, 0))
+                                expand = c(0,0)) +
+    # Y-axis Label
+    ggplot2::ylab("") +
+    ggplot2::xlab("Percent") +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      legend.position = "none"
+    )
+
+}
+
+#' Creates stacked bar plot.
+#'
+#' Creates stacked bar plot which shows all levels of a variable. Used for both qualitative and likert scale responses.
+#'
+#' @param data_ the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.
+#' @param cols_ column name(s) (as a character vector)
+#' @param remove_angle_brackets logical. Should we remove brackets around <missingness> variables?
+#' @return an object of class ggplot.
+#' @export
+cdrs_plt_stacked <- function(
+    data_,
+    cols_,
+    remove_angle_brackets = TRUE
+){
+
+  if(remove_angle_brackets){
+    data_ <- remove_angle_brackets(data_,
+                                   cols_)
+  }
+
+  # run these columns through cdrs_props()
+  props_ <- purrr::map_dfr(cols_,
+                           ~cdrs_props(data_ = data_,
+                                       col_ = .x))
+
+  ggplot2::ggplot(data = props_,
+                  mapping = ggplot2::aes(x = mean,
+                                         y = variable,
+                                         fill = levels)) +
+    ggplot2::geom_bar(stat = "identity") +
+    ggplot2::scale_fill_brewer(type = "qual") +
+    ggplot2::scale_x_continuous(
+      breaks = c(0, 0.25, 0.5, 0.75, 1),
+      labels = c("0", "25%", "50%", "75%", "100%"),
+      expand = c(.05, .05)
+    ) +
+    ggplot2::scale_y_discrete(expand = c(0, 0)) +
+    ggplot2::labs(x = "",
+                  y = "") +
+    ggplot2::theme_bw()
+}
+
+
