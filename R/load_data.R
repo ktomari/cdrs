@@ -587,7 +587,7 @@ cdrs_read <- function(
   if(return_dict){
     list(
       data = data,
-      dict = dd
+      dict = enrich_dict(dd)
     )
   } else {
     data
