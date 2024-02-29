@@ -109,5 +109,24 @@ composite_frame <- data.frame(
   )
 )
 
+# errata ----
+# This is potential errata for collaborator data.
+# TODO conditionally weave this into cdrs_read().
+# However, these variables are not present in "public" data set.
+# So it is not a priority.
+dict_errata <- tibble::tibble(
+  Variable = c("Q5", "Q11", "Q25"),
+  name = c("Label", "Label", "Label"),
+  value = c(
+    "5. In one or two short sentences, please describe the Delta Region as you would to someone who is not familiar with it.",
+    "11. When you imagine life in the Delta one generation from now (approximately 25 years), what do you hope it looks like? Please provide 1-2 short sentences.",
+    "25. If you have any additional thoughts on community and environmental wellbeing in the Delta, please write them here."
 
+  ),
+  encoding = NA,
+  frequency = NA,
+  percent = NA
+)
+
+# generate internal data ----
 usethis::use_data(necessary_files, zone_N, composite_frame, internal = T, overwrite = T)
