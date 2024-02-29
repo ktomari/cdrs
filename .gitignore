@@ -10,3 +10,4 @@ data-raw/UNSHAREABLE*
 data-raw/*.afdesign
 inst/doc
 data-raw/scratch.R
+data-raw/DRS*
