@@ -109,7 +109,6 @@ cdrs_plt_labels <- function(
 #' @param level_ character. The name of the level you want to keep. This is useful for questions with dichotomous response options like `"Yes"`, that you wish to isolate. Should be used with `cdrs_plt_bar`.
 #' @param remove_angle_brackets logical.
 #' @param is_weighted logical.
-#' @param label_details character.
 #' @return object of class tibble, data set proportions.
 #' @export
 cdrs_plt_prep <- function(
@@ -330,8 +329,7 @@ cdrs_plt_bar <- function(
 #' @return an object of class ggplot.
 #' @export
 cdrs_plt_stacked <- function(
-    prep_,
-    cols_
+    prep_
 ){
   ggplot2::ggplot(data = prep_,
                   mapping = ggplot2::aes(x = mean,

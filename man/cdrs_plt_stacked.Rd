@@ -4,7 +4,7 @@
 \alias{cdrs_plt_stacked}
 \title{Creates stacked bar plot.}
 \usage{
-cdrs_plt_stacked(prep_, cols_)
+cdrs_plt_stacked(prep_)
 }
 \arguments{
 \item{prep_}{the tibble returned from \code{cdrs_plt_prep.}}

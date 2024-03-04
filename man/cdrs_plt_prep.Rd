@@ -25,8 +25,6 @@ cdrs_plt_prep(
 \item{remove_angle_brackets}{logical.}
 
 \item{is_weighted}{logical.}
-
-\item{label_details}{character.}
 }
 \value{
 object of class tibble, data set proportions.
