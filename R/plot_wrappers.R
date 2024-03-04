@@ -85,50 +85,172 @@ get_unwt_props <- function(
   props_
 }
 
+#' Create labels for plots.
+#'
+#' Choose which kinds of text decoration your plot will have.
+#'
+#' @param dict_ is the uncompromised data dictionary.
+#' @param cols_ variable/column names of the DRS data.
+#' @return tibble. A modified subset of the original dictionary.
+cdrs_plt_labels <- function(
+    dict_,
+    cols_
+){
+
+}
+
+#' Prepare data for plotting.
+#'
+#' Prepare DRS data for plotting.
+#'
+#' @param data_ the DRS data.
+#' @param cols_ the columns of interest.
+#' @param dict_ the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
+#' @param level_ character. The name of the level you want to keep. This is useful for questions with dichotomous response options like `"Yes"`, that you wish to isolate. Should be used with `cdrs_plt_bar`.
+#' @param remove_angle_brackets logical.
+#' @param is_weighted logical.
+#' @param label_details character.
+#' @return object of class tibble, data set proportions.
+#' @export
+cdrs_plt_prep <- function(
+    data_,
+    cols_,
+    dict_ = NULL,
+    level_ = NULL,
+    remove_angle_brackets = TRUE,
+    is_weighted = TRUE
+){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Argument error check
+  stopifnot(class(cols_) == "character" &
+              length(cols_) > 0)
+
+  stopifnot("data.frame" %in% class(data_) |
+              "tibble" %in% class(data_))
+
+  stopifnot("data.frame" %in% class(dict_) |
+              "tibble" %in% class(dict_) |
+              is.null(dict_))
+
+  stopifnot(is.null(level_) |
+              class(level_) == "character")
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Remove angle brackets.
+  if(remove_angle_brackets){
+    data_ <- remove_angle_brackets(data_,
+                                   cols_)
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Get proportions
+  if(is_weighted){
+    prep_ <- purrr::map_dfr(cols_,
+                             ~cdrs_props(data_ = data_,
+                                         col_ = .x))
+  } else {
+    prep_ <- purrr::map_dfr(cols_,
+                             ~get_unwt_props(
+                               data_ = data_,
+                               col_ = .x
+                             ))
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Remove other levels
+  if(!is.null(level_)){
+    # Usually, we only want "Yes" for bar plots.
+    # Note, `!!` is non-standard evaluation (NSE).
+    # See Wickham's Advanced R.
+    prep_ <- prep_ %>%
+      dplyr::filter(levels == !!level_)
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Add descriptive details for plotting labels.
+  if(!is.null(dict_)){
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Rewrite `variable` with "unique label".
+    # Example: "Q13a" becomes "Rising sea levels".
+    # In other words, this serves as the labels on the Y-axis for bar plots.
+    if("repsonse_lab" %in% dict_$name){
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # create table of values to replace "variable" column in prep_.
+      # var_replacement will either be an empty tibble
+      # with dim(var_replacement) == integer(c(0,0-)),
+      # or it will offer a tibble we can use a join function with.
+      var_replacement <- purrr::map_dfr(
+        .x = cols_,
+        .f = function(var){
+          sub_dict <- dict_ %>%
+            dplyr::filter(Variable == var)
+
+          if("repsonse_lab" %in% sub_dict$name){
+            tibble::tibble(
+              variable = var,
+              label = sub_dict %>%
+                dplyr::filter(name == "repsonse_lab") %>%
+                dplyr::pull(value)
+            )
+          } else {
+            NULL
+          }
+        })
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # re-create variable column with labels derived from dictionary.
+      if(!identical(
+        dim(var_replacement),
+        as.integer(c(0,0))
+      )){
+        prep_ <- prep_ %>%
+          # join with table derived from dict.
+          dplyr::left_join(var_replacement, by = "variable") %>%
+          # In cases where nothing was matched for the `label`,
+          # ie. its `NA`,
+          # set it to the value in `variable`.
+          dplyr::mutate(label = dplyr::case_when(
+            is.na(label) ~ variable,
+            .default = label
+          )) %>%
+          # Convert to factor.
+          dplyr::mutate(label = forcats::as_factor(label)) %>%
+          # Remove old `variable` column
+          dplyr::select(-variable) %>%
+          # Rename it.
+          dplyr::rename(variable = label)
+      }
+    }
+
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Return
+  prep_
+}
+
 #' Plot a pie chart.
 #'
-#' @param data_ the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.
-#' @param col_ column name (as a character)
-#' @param weighted_ should we use weighted data?
-#' @param remove_angle_brackets logical. Should we remove brackets around <missingness> variables?
+#' @param prep_ the tibble returned from `cdrs_plt_prep.`
 #' @return an object of class ggplot.
 #' @export
 #'
 #' @examples
 #' dat <- cdrs_read_example()
-#' cdrs_plt_pie(dat, "Q2")
+#' prep_ <- cdrs_plt_prep(data_ = dat, cols_ = "Q2")
+#' cdrs_plt_pie(prep_)
 cdrs_plt_pie <- function(
-    data_,
-    col_,
-    weighted_ = TRUE,
-    remove_angle_brackets = TRUE
+    prep_
 ){
-
-  if(remove_angle_brackets){
-    data_ <- remove_angle_brackets(data_, col_)
-  }
-
-  # Get proportions of each factor level
-  if(weighted_){
-    props_ <- cdrs_props(
-      data_ = data_,
-      col_ = col_
-    )
-  } else {
-    props_ <- get_unwt_props(
-      data_ = data_,
-      col_ = col_
-    )
-  }
-
   # What number of factors do we have?
-  n_fct <- nrow(props_)
+  n_fct <- nrow(prep_)
 
   # Create a palette
   pal <- qual_pal(n_fct)
 
   ggplot2::ggplot(
-    data = props_,
+    data = prep_,
     mapping =
       ggplot2::aes(
         x = "",
@@ -170,30 +292,15 @@ cdrs_plt_pie <- function(
 #'
 #' Plot questions from the DRS data set with only one level of interest (eg. questions where we only want to show "Yes" responses).
 #'
-#' @param data_ the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.
-#' @param cols_ column name(s) (as a character vector)
-#' @param level_ character.
+#' @param prep_ the tibble returned from `cdrs_plt_prep.`
 #' @return an object of class ggplot.
 #' @export
 cdrs_plt_bar <- function(
-    data_,
-    cols_,
-    level_
-    # remove_angle_brackets = TRUE
+    prep_
 ){
-  stopifnot(length(level_) == 1)
-
-  # run these columns through cdrs_props()
-  props_ <- purrr::map_dfr(cols_,
-                       ~cdrs_props(data_ = data_,
-                                   col_ = .x))
-
-  # we only want "Yes" for bar plots (generally speaking)
-  props_ <- props_ %>%
-    dplyr::filter(levels == !!level_)
 
   ggplot2::ggplot(
-    data = props_,
+    data = prep_,
     mapping = ggplot2::aes(
       x = percent,
       y = variable
@@ -219,28 +326,14 @@ cdrs_plt_bar <- function(
 #'
 #' Creates stacked bar plot which shows all levels of a variable. Used for both qualitative and likert scale responses.
 #'
-#' @param data_ the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.
-#' @param cols_ column name(s) (as a character vector)
-#' @param remove_angle_brackets logical. Should we remove brackets around <missingness> variables?
+#' @param prep_ the tibble returned from `cdrs_plt_prep.`
 #' @return an object of class ggplot.
 #' @export
 cdrs_plt_stacked <- function(
-    data_,
-    cols_,
-    remove_angle_brackets = TRUE
+    prep_,
+    cols_
 ){
-
-  if(remove_angle_brackets){
-    data_ <- remove_angle_brackets(data_,
-                                   cols_)
-  }
-
-  # run these columns through cdrs_props()
-  props_ <- purrr::map_dfr(cols_,
-                           ~cdrs_props(data_ = data_,
-                                       col_ = .x))
-
-  ggplot2::ggplot(data = props_,
+  ggplot2::ggplot(data = prep_,
                   mapping = ggplot2::aes(x = mean,
                                          y = variable,
                                          fill = levels)) +

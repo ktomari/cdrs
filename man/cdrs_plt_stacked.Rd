@@ -4,14 +4,10 @@
 \alias{cdrs_plt_stacked}
 \title{Creates stacked bar plot.}
 \usage{
-cdrs_plt_stacked(data_, cols_, remove_angle_brackets = TRUE)
+cdrs_plt_stacked(prep_, cols_)
 }
 \arguments{
-\item{data_}{the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.}
-
-\item{cols_}{column name(s) (as a character vector)}
-
-\item{remove_angle_brackets}{logical. Should we remove brackets around \if{html}{\out{<missingness>}} variables?}
+\item{prep_}{the tibble returned from \code{cdrs_plt_prep.}}
 }
 \value{
 an object of class ggplot.

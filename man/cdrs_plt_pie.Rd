@@ -4,16 +4,10 @@
 \alias{cdrs_plt_pie}
 \title{Plot a pie chart.}
 \usage{
-cdrs_plt_pie(data_, col_, weighted_ = TRUE, remove_angle_brackets = TRUE)
+cdrs_plt_pie(prep_)
 }
 \arguments{
-\item{data_}{the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.}
-
-\item{col_}{column name (as a character)}
-
-\item{weighted_}{should we use weighted data?}
-
-\item{remove_angle_brackets}{logical. Should we remove brackets around \if{html}{\out{<missingness>}} variables?}
+\item{prep_}{the tibble returned from \code{cdrs_plt_prep.}}
 }
 \value{
 an object of class ggplot.
@@ -23,5 +17,6 @@ Plot a pie chart.
 }
 \examples{
 dat <- cdrs_read_example()
-cdrs_plt_pie(dat, "Q2")
+prep_ <- cdrs_plt_prep(data_ = dat, cols_ = "Q2")
+cdrs_plt_pie(prep_)
 }

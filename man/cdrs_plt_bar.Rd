@@ -4,14 +4,10 @@
 \alias{cdrs_plt_bar}
 \title{Dichotomous Question Bar Plots.}
 \usage{
-cdrs_plt_bar(data_, cols_, level_)
+cdrs_plt_bar(prep_)
 }
 \arguments{
-\item{data_}{the DRS data containing at least the column specified in the next parameter. If weighted is TRUE, both Zone and WTFINAL should also be available in data_.}
-
-\item{cols_}{column name(s) (as a character vector)}
-
-\item{level_}{character.}
+\item{prep_}{the tibble returned from \code{cdrs_plt_prep.}}
 }
 \value{
 an object of class ggplot.
