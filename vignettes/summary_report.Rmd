@@ -26,7 +26,7 @@ If you replace the data in this document with the public data set, you will stil
 
 ```{r}
 # Load the fabricated data set.
-fabricated_data <- cdrs_read_example()
+fabricated_data <- cdrs_read_example(return_dict = T)
 ```
 
 ## Characteristics of Survey Respondents
@@ -38,72 +38,112 @@ fabricated_data <- cdrs_read_example()
 The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column.
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "SEX_P",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "SEX_P"
+  prep_ = plot_prep
 )
 ```
 
 ### Age
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "AGE_P",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "AGE_P"
+  prep_ = plot_prep
 )
 ```
 
 ### Race
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "RACE_P",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "RACE_P"
+  prep_ = plot_prep
 )
 ```
 
 ### Education
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "EDU_P",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "EDU_P"
+  prep_ = plot_prep
 )
 ```
 
 ### Income
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "INCOME_P",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "INCOME_P"
+  prep_ = plot_prep
 )
 ```
 
 ### Home Ownership
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "HOMEOWNERSHIP_P",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "HOMEOWNERSHIP_P"
+  prep_ = plot_prep
 )
 ```
 
 ### Residential Designation
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "Q2",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "Q2"
+  prep_ = plot_prep
 )
 ```
 
 ### Political ideology
 
 ```{r}
+plot_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = "Q34",
+  dict_ = fabricated_data$dict
+)
+
 cdrs_plt_pie(
-  data_ = fabricated_data,
-  col_ = "Q34"
+  prep_ = plot_prep
 )
 ```
 
