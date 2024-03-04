@@ -91,12 +91,23 @@ get_unwt_props <- function(
 #'
 #' @param dict_ is the uncompromised data dictionary.
 #' @param cols_ variable/column names of the DRS data.
+#' @param qid_labels character. Options include "short", "long", NULL.
 #' @return tibble. A modified subset of the original dictionary.
 cdrs_plt_labels <- function(
     dict_,
-    cols_
+    cols_,
+    qid_labels = NULL,
+    title_ = NULL,
+    subtitle_ = NULL,
+    caption_ = NULL
 ){
 
+  if(!is.null(qid_labels)){
+    labs <- cdrs_labels_table() %>%
+      filter(Variable %in% cols_)
+
+
+  }
 }
 
 #' Prepare data for plotting.
@@ -173,7 +184,7 @@ cdrs_plt_prep <- function(
     # Rewrite `variable` with "unique label".
     # Example: "Q13a" becomes "Rising sea levels".
     # In other words, this serves as the labels on the Y-axis for bar plots.
-    if("repsonse_lab" %in% dict_$name){
+    if("response_lab" %in% dict_$name){
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # create table of values to replace "variable" column in prep_.
       # var_replacement will either be an empty tibble
@@ -185,11 +196,11 @@ cdrs_plt_prep <- function(
           sub_dict <- dict_ %>%
             dplyr::filter(Variable == var)
 
-          if("repsonse_lab" %in% sub_dict$name){
+          if("response_lab" %in% sub_dict$name){
             tibble::tibble(
               variable = var,
               label = sub_dict %>%
-                dplyr::filter(name == "repsonse_lab") %>%
+                dplyr::filter(name == "response_lab") %>%
                 dplyr::pull(value)
             )
           } else {
