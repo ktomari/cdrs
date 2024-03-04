@@ -1,4 +1,4 @@
-﻿Variable,title,label,short_label,level,short_level
+﻿Variable,short_title,label,short_label,level,short_level
 DRS_ID,,DRS Unique ID,ID,,
 DistributionChannel,,Survey Distribution Method,Method,,
 UserLanguage,,Survey Respondent Language,Svy Lang.,,
