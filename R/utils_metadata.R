@@ -1,3 +1,25 @@
+
+#' Add a grouping column.
+#'
+#' Add a new column in the data set based on qid grouping variable. This
+#' character column will be filled with values like 1, 1a, 2, 3, and so on.
+#'
+#' @param dict_ the data dictionary
+#' @param var_ the column for the variable ID's.
+#' @return tibble of dict_ with new column 'grp'
+generate_grp <- function(
+    dict_,
+    var_ = "Variable"){
+  dict_ %>%
+    dplyr::mutate(grp = dplyr::case_when(
+      stringr::str_detect(Variable, "^Q13") ~ "13",
+      stringr::str_detect(Variable, "^Q41") ~ "41",
+      stringr::str_detect(Variable, "^Q42") ~ "42",
+      .default = stringr::str_extract(Variable,
+                                      "(?<=Q)\\d{1,2}[[:alpha:]]*")
+    ))
+}
+
 #' Creates an enriched data dictionary
 #'
 #' Creates a data dictionary where question labels are split into their "prompt" and "response" components. This function heavily relies on tidyr's nesting functions.
@@ -20,13 +42,7 @@ enrich_dict <- function(
     dplyr::select(Variable, value) %>%
     # create a grouping column based qid integer+alphabetical,
     # eg. group 1, 1a, 2, etc.
-    dplyr::mutate(grp = dplyr::case_when(
-      stringr::str_detect(Variable, "^Q13") ~ "13",
-      stringr::str_detect(Variable, "^Q41") ~ "41",
-      stringr::str_detect(Variable, "^Q42") ~ "42",
-      .default = stringr::str_extract(Variable,
-                                      "(?<=Q)\\d{1,2}[[:alpha:]]*")
-    )) %>%
+    generate_grp() %>%
     # remove those without groups
     dplyr::filter(!is.na(grp)) %>%
     # lump together by group
@@ -175,6 +191,7 @@ enrich_dict <- function(
 cdrs_labels_table <- function(){
   readr::read_csv(file = system.file("extdata",
                                      "public_labels.csv",
-                                     package = "cdrs")
+                                     package = "cdrs"),
+                  show_col_types = F
   )
 }
