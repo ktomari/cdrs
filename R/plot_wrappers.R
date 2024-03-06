@@ -91,23 +91,239 @@ get_unwt_props <- function(
 #'
 #' @param dict_ is the uncompromised data dictionary.
 #' @param cols_ variable/column names of the DRS data.
-#' @param qid_labels character. Options include "short", "long", NULL.
-#' @return tibble. A modified subset of the original dictionary.
+#' @param qid_labels character. Options include "short", "alphabet", `NULL`. These labels correspond to the table created by `cdrs_labels_table()`. If "short", either the variable `short_label` or `short_lvl` is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If `NULL` no table is returned.
+#' @param title_ character. Options include "short", "long" or `NULL`. If "short" the `short_title` is retrieved from the labels table (see `cdrs_labels_table()`), If "long", the Label value is retrieved from `dict_`. If `NULL`, nothing is returned.
+#' @param subtitle_ logical. If `TRUE` it returns the long title (ie. Label) from the `dict_`.
+#' @param caption_ logical. If `TRUE` a detailed message include valid response counts and missingness variable counts returned.
+#' @return list.
+#' @export
 cdrs_plt_labels <- function(
     dict_,
     cols_,
     qid_labels = NULL,
     title_ = NULL,
-    subtitle_ = NULL,
-    caption_ = NULL
+    subtitle_ = F,
+    caption_ = F
 ){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Error check.
+  stopifnot("data.frame" %in% class(dict_))
+  stopifnot("character" %in% class(cols_))
+  stopifnot("character" %in% class(qid_labels) | is.null(qid_labels))
+  stopifnot("character" %in% class(title_) | is.null(title_))
+  stopifnot("logical" %in% class(subtitle_))
+  stopifnot("logical" %in% class(caption_))
 
-  if(!is.null(qid_labels)){
-    labs <- cdrs_labels_table() %>%
-      filter(Variable %in% cols_)
+  # Which column names available in dict_?
+  valid_cols <- cols_ %in% (dict_$Variable %>% unique())
 
-
+  # Are all column names in dict_?
+  if(!all(valid_cols)){
+    stop(paste0(
+      "The following column names were erroneously supplied to ",
+      "cdrs_plt_labels(): ",
+      paste0(cols_[!valid_cols], collapse = ", "),
+      "."
+    ))
   }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # initialize output list.
+  out <- list()
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # First, retrieve labels or levels.
+  # This section creates `labels_`
+  if(!is.null(qid_labels)){
+
+    labs <- cdrs_labels_table()
+    if(qid_labels == "short"){
+      out$labels <- labs %>%
+        dplyr::filter(Variable %in% cols_) %>%
+        dplyr::select(-short_title) %>%
+        dplyr::select(tidyselect::where(~!all(is.na(.))))
+
+    } else if (qid_labels == "alphabet"){
+      out$labels <- labs %>%
+        dplyr::filter(Variable %in% cols_) %>%
+        dplyr::select(tidyselect::where(~!all(is.na(.)))) %>%
+        dplyr::select(tidyselect::any_of(c("Variable",
+                                           "label",
+                                           "level"))) %>%
+        dplyr::mutate(new_lab = dplyr::case_when(
+          dplyr::row_number() <= 26 ~ letters[dplyr::row_number()],
+          .default = paste0(letters[dplyr::row_number() %% 26],
+                            floor(dplyr::row_number()/26))
+        )
+        )
+    }
+
+  } else {
+    # In this case, default factors are used, and because
+    # of this we don't need labels_
+    out$labels <- NULL
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Next retrieve other plot text decoration
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # title
+  if(title_ == "short"){
+    out$title <- labs %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      dplyr::filter(!is.na(short_title)) %>%
+      dplyr::pull("short_title") %>%
+      unique() %>%
+      paste0(., collapse = " & ")
+  } else if(title_ == "long"){
+    tmp <- dict_ %>%
+      dplyr::filter(Variable %in% cols_)
+
+    if("prompt_lab" %in% tmp$name){
+      out$title <- tmp %>%
+        dplyr::filter(name == "prompt_lab") %>%
+        generate_grp() %>%
+        dplyr::mutate(value = paste0("Q", grp, ". ", value)) %>%
+        dplyr::pull(value) %>%
+        unique() %>%
+        stringr::str_squish() %>%
+        paste0(., collapse = " & ")
+    } else {
+      out$title <- NULL
+    }
+  } else {
+    out$title <- NULL
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # subtitle
+  if(subtitle_ & title_ != "long"){
+    tmp <- dict_ %>%
+      dplyr::filter(Variable %in% cols_)
+
+    if("prompt_lab" %in% tmp$name){
+      out$subtitle <- tmp %>%
+        dplyr::filter(name == "prompt_lab") %>%
+        generate_grp() %>%
+        dplyr::mutate(value = paste0("Q", grp, ". ", value)) %>%
+        dplyr::pull(value) %>%
+        unique() %>%
+        stringr::str_squish() %>%
+        paste0(., collapse = " & ")
+    } else {
+      out$subtitle <- NULL
+    }
+  } else {
+    out$subtitle <- NULL
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # captions
+  if(caption_){
+    # First, create missing levels description text.
+    # eg. "Decline to answer" Q2: 0%, ...
+    missingness_txt <- dict_ %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      # generate_group() %>%
+      dplyr::filter(name == "factors") %>%
+      dplyr::select(-name, -percent) %>%
+      dplyr::filter(encoding != "-97") %>%
+      dplyr::filter(stringr::str_detect(value, "^\\<.+\\>$")) %>%
+      dplyr::mutate(value = stringr::str_remove_all(value, "^\\<|\\>$")) %>%
+      dplyr::group_by(value) %>%
+      tidyr::nest(nested = c("Variable", "frequency")) %>%
+      dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
+        # ~~~~~~~~~~~~~~~~~~~~~
+        # Objective:
+        # Place all values into one string,
+        # reducing variables within a group wherever possible.
+        # Example output might look like:
+        # "Q1 (n = 2), Q13a (n = 9), ..."
+        # ~~~~~~~~~~~~~~~~~~~~~
+        # returns tibble with:
+        # txt [chr]
+
+        # We begin by seeing if we find common value for each grouping.
+        grp_tb %>%
+          generate_grp() %>%
+          dplyr::group_by(grp) %>%
+          dplyr::mutate(all_equal = length(unique(frequency)) == 1) %>%
+          dplyr::ungroup() %>%
+          # Now that we know if all of one group is equal, eg.
+          # all of Q1_0, Q1_1,...etc are all equal to 2,
+          # we will equate all these "Variable" values to
+          # its group. Following the example above, everything becomes,
+          # Q1.
+          dplyr::mutate(Variable = dplyr::case_when(
+            all_equal & !is.na(grp) ~ paste0("Q", grp),
+            .default = Variable
+          )) %>%
+          # remove unneeded columns
+          dplyr::select(-grp, -all_equal) %>%
+          # Because some "Variable"s have been converted to their group,
+          # eg, from c(Q1_0, Q1_1, ...) to c("Q1", "Q1", ...),
+          # we now have duplicate rows. Let's weed these out.
+          dplyr::distinct() %>%
+          # Finally, flatten these values to a single string in `txt` within
+          # this nested tibble.
+          dplyr::reframe(txt = paste0(
+            Variable,
+            " (n = ",
+            frequency,
+            ")",
+            collapse = ", "
+          ))
+      })
+      ) %>%
+      tidyr::unnest(nested) %>%
+      # Now add the missing factor to the `txt` we generated in the nested col.
+      dplyr::reframe(val_txt = paste0('"', value, '" ', txt, ".")) %>%
+      dplyr::pull(val_txt) %>%
+      # Reduce everything to a single string.
+      paste0(., collapse = " ") %>%
+      paste0("The raw frequencies of missing values that are not conveyed by the graph follows. ", .)
+
+    response_cnt <- dict_ %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      dplyr::filter(name == "Valid Responses") %>%
+      generate_grp() %>%
+      dplyr::mutate(grp = dplyr::case_when(
+        is.na(grp) ~ Variable,
+        .default = paste0("Q", grp)
+      )) %>%
+      dplyr::group_by(grp) %>%
+      tidyr::nest(nested = c(Variable, value)) %>%
+      dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
+        if(length(unique(grp_tb$value)) == 1){
+          tibble::tibble(txt = grp_tb$value[1])
+        } else {
+          tibble::tibble(txt = grp_tb$value)
+        }
+      })) %>%
+      tidyr::unnest(nested) %>%
+      dplyr::mutate(txt = paste0(grp, " (n = ", txt, ")")) %>%
+      dplyr::pull(txt) %>%
+      paste0(., collapse = ", ") %>%
+      paste0("Valid responses per variable: ", ., ".")
+
+    # Now we store everything for output
+    out$caption <- paste0(
+      "California Delta Residents Survey (2023) data were collected in the first quarter of 2023. ",
+      "Total (n = ",
+      dict_$value[dict_$Variable == "DRS_ID" &
+                    dict_$name == "Total (n)"],
+      "). ",
+      response_cnt,
+      " ",
+      missingness_txt
+    )
+  } else {
+    out$captions <- NULL
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # return
+  out
 }
 
 #' Prepare data for plotting.
