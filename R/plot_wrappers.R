@@ -1,118 +1,46 @@
-# Helpers and wrappers for ggplot() and other plotting functions.
+# Exported helper functions and wrappers for ggplot() functions.
 
-#' Creates qualitative palette of hex color values.
+#' Create text for plots.
 #'
-#' These palettes were selected based on the greatest minimum distance between all sets of colors in the palette. This distance was calculated using `colorblindcheck::palette_check`, which creates a set of scores for each palette for each of the three major types of color vision deficiencies: deuteranopia, protanopia, and tritanopia.
+#' Create different kinds of text decoration for your plot, including labels that appear along the graph axis, titles, subtitles & captions.
 #'
-#' @param n_fct is the number of factors/colors we need.
-#' @param seed is a numeric value that gives the seed for "random" color
-#' selection within the appropriate palette.
-#'
-#' @return an palette (character vector).
-#'
-#' @examples
-#' # Return first 5 colors of Okabe-Ito
-#' cdrs:::qual_pal(5)
-qual_pal <- function(n_fct, seed = NA){
-
-  # Get initial palette
-  # Palettes were examined using {colorblindcheck}
-  if (n_fct < 9) {
-    # Okabe-Ito is one of the best performing CVD-friendly palettes
-    pal <- grDevices::palette.colors(n = 8,
-                                     palette = "Okabe-Ito")
-  } else if (n_fct < 13) {
-    # Safe is also quite CVD-friendly.
-    pal <- rcartocolor::carto_pal(n = 12,
-                                  name = "Safe")
-  } else if (n_fct < 27) {
-    # Alphabet actually tied with Polychrome for min_dist
-    # but Alphabet is prettier.
-    pal <- grDevices::palette.colors(n = 26, palette = "Alphabet")
-  } else if (n_fct < 37) {
-    # Worst case scenario, this palette performs better than the
-    # default ggplot gradient cut into 36 colors.
-    pal <- grDevices::palette.colors(n = 36, palette = "Polychrome")
-  } else {
-    stop("Too many factors for default palettes!")
-  }
-
-  # Randomly assign colors
-  if(!is.na(seed)){
-    pal <- withr::with_seed(
-      seed = seed,
-      code = sample(x = pal,
-                    size = n_fct)
-    )
-  } else {
-    # or not.
-    pal <- pal[1:n_fct]
-  }
-
-  # Return
-  pal
-}
-
-#' Get factor proportions for plotting.
-#'
-#' @param data_ full data set.
-#' @param col_ column name (as a character)
-#' @return tibble of unweighted proportions.
-#'
-#' @examples
-#' dat <- cdrs_read_example()
-#' cdrs:::get_unwt_props(dat, "Q2")
-get_unwt_props <- function(
-    data_,
-    col_
-){
-
-  props_ <- data_ %>%
-    filter(!is.na(!!rlang::sym(col_))) %>%
-    dplyr::group_by(!!rlang::sym(col_)) %>%
-    dplyr::reframe(Count = dplyr::n()) %>%
-    mutate(mean = (Count/sum(Count))) %>%
-    dplyr::rename(levels := !!rlang::sym(col_)) %>%
-    mutate(variable = col_) %>%
-    select(variable, levels, Count, mean)
-
-  # Add textual detail for plotting.
-  props_ <- props_ %>%
-    mutate(percent = round(mean * 100)) %>%
-    mutate(percent = paste0(percent, "%"))
-
-  # return
-  props_
-}
-
-#' Create labels for plots.
-#'
-#' Choose which kinds of text decoration your plot will have.
-#'
-#' @param dict_ is the uncompromised data dictionary.
+#' @param dict_ is the data dictionary. All columns in `cols_` must be present in `dict_$Variable`.
 #' @param cols_ variable/column names of the DRS data.
-#' @param qid_labels character. Options include "short", "alphabet", `NULL`. These labels correspond to the table created by `cdrs_labels_table()`. If "short", either the variable `short_label` or `short_lvl` is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If `NULL` no table is returned.
-#' @param title_ character. Options include "short", "long" or `NULL`. If "short" the `short_title` is retrieved from the labels table (see `cdrs_labels_table()`), If "long", the Label value is retrieved from `dict_`. If `NULL`, nothing is returned.
+#' @param qid_labels character. Options include "short", "alphabet", `NULL`. These labels correspond to the table created by `plt_labels()`. If "short", either the variable `short_label` or `short_lvl` is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If `NULL` no table is returned.
+#' @param title_ character. Options include "short", "long" or `NULL`. If "short" the `short_title` is retrieved from the labels table (see `plt_labels()`), If "long", the Label value is retrieved from `dict_`. If `NULL`, nothing is returned.
 #' @param subtitle_ logical. If `TRUE` it returns the long title (ie. Label) from the `dict_`.
 #' @param caption_ logical. If `TRUE` a detailed message include valid response counts and missingness variable counts returned.
-#' @return list.
+#' @param valid_n numeric or `NULL`. Not strictly necessary, but this overrides the value returned from dict_ for Valid Responses. This is useful for old versions of the data dictionary that reported incorrect values.
+#' @param param_file character, path to plot_parameters file.
+#' @return list. The list could be empty, or have one or more of the following: 'labels', 'title', 'subtitle', and/or 'caption'.
 #' @export
-cdrs_plt_labels <- function(
+cdrs_plt_txt <- function(
     dict_,
     cols_,
     qid_labels = NULL,
     title_ = NULL,
-    subtitle_ = F,
-    caption_ = F
+    subtitle_ = FALSE,
+    caption_ = FALSE,
+    valid_n = NULL,
+    param_file = system.file("extdata",
+                             "plot_parameters.xlsx",
+                             package = "cdrs")
 ){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Error check.
-  stopifnot("data.frame" %in% class(dict_))
-  stopifnot("character" %in% class(cols_))
-  stopifnot("character" %in% class(qid_labels) | is.null(qid_labels))
-  stopifnot("character" %in% class(title_) | is.null(title_))
-  stopifnot("logical" %in% class(subtitle_))
-  stopifnot("logical" %in% class(caption_))
+  stopifnot(inherits(dict_, "data.frame"))
+
+  stopifnot(inherits(cols_, "character"))
+
+  stopifnot(inherits(qid_labels, "character") |
+              inherits(qid_labels, "NULL"))
+
+  stopifnot(inherits(title_, "character") |
+              inherits(title_, "NULL"))
+
+  stopifnot(inherits(subtitle_, "logical"))
+
+  stopifnot(inherits(caption_, "logical"))
 
   # Which column names available in dict_?
   valid_cols <- cols_ %in% (dict_$Variable %>% unique())
@@ -128,29 +56,50 @@ cdrs_plt_labels <- function(
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Strip dictionary of unneeded columns/Variables
+  dict_ <- dict_ %>%
+    dplyr::filter(Variable %in% cols_)
+
+  dict_ <- enrich_dict(dict_)
+
+  # load labels, and remove unneeded columns/Variables
+  labs <- plt_labels(dict_ = dict_)
+
+  # Check to see if there are labels to add.
+  na_labs <- labs %>%
+    dplyr::select(tidyselect::where(~all(is.na(.)))) %>%
+    names()
+
+  # Does `labs` have useful content?
+  na_labs <- !identical(na_labs,
+                        c("label",
+                          "short_label",
+                          "level",
+                          "short_level"))
+
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # initialize output list.
   out <- list()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # labels/levels ----
   # First, retrieve labels or levels.
   # This section creates `labels_`
-  if(!is.null(qid_labels)){
+  if(!is.null(qid_labels) & na_labs){
 
-    labs <- cdrs_labels_table()
     if(qid_labels == "short"){
       out$labels <- labs %>%
-        dplyr::filter(Variable %in% cols_) %>%
         dplyr::select(-short_title) %>%
         dplyr::select(tidyselect::where(~!all(is.na(.))))
 
     } else if (qid_labels == "alphabet"){
       out$labels <- labs %>%
-        dplyr::filter(Variable %in% cols_) %>%
         dplyr::select(tidyselect::where(~!all(is.na(.)))) %>%
         dplyr::select(tidyselect::any_of(c("Variable",
                                            "label",
                                            "level"))) %>%
-        dplyr::mutate(new_lab = dplyr::case_when(
+        dplyr::mutate(alphabet = dplyr::case_when(
           dplyr::row_number() <= 26 ~ letters[dplyr::row_number()],
           .default = paste0(letters[dplyr::row_number() %% 26],
                             floor(dplyr::row_number()/26))
@@ -162,13 +111,18 @@ cdrs_plt_labels <- function(
     # In this case, default factors are used, and because
     # of this we don't need labels_
     out$labels <- NULL
+      # filter(name == "factors") %>%
+      # dplyr::rename(level = value) %>%
+      # dplyr::select(Variable, level, frequency)
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Next retrieve other plot text decoration
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # title
-  if(title_ == "short"){
+  # title ----
+  if(is.null(title_)){
+    out$title <- NULL
+  } else if(title_ == "short"){
     out$title <- labs %>%
       dplyr::filter(Variable %in% cols_) %>%
       dplyr::filter(!is.na(short_title)) %>%
@@ -176,11 +130,8 @@ cdrs_plt_labels <- function(
       unique() %>%
       paste0(., collapse = " & ")
   } else if(title_ == "long"){
-    tmp <- dict_ %>%
-      dplyr::filter(Variable %in% cols_)
-
-    if("prompt_lab" %in% tmp$name){
-      out$title <- tmp %>%
+    if("prompt_lab" %in% dict_$name){
+      out$title <- dict_ %>%
         dplyr::filter(name == "prompt_lab") %>%
         generate_grp() %>%
         dplyr::mutate(value = paste0("Q", grp, ". ", value)) %>%
@@ -189,20 +140,24 @@ cdrs_plt_labels <- function(
         stringr::str_squish() %>%
         paste0(., collapse = " & ")
     } else {
-      out$title <- NULL
+      out$title <- dict_ %>%
+        dplyr::filter(name == "Label") %>%
+        dplyr::pull(value) %>%
+        unique%>%
+        stringr::str_squish() %>%
+        paste0(., collapse = " & ")
+
     }
-  } else {
-    out$title <- NULL
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # subtitle
-  if(subtitle_ & title_ != "long"){
-    tmp <- dict_ %>%
-      dplyr::filter(Variable %in% cols_)
+  # subtitle ----
+  if(!subtitle_){
+    out$subtitle <- NULL
+  } else if(subtitle_){
 
-    if("prompt_lab" %in% tmp$name){
-      out$subtitle <- tmp %>%
+    if("prompt_lab" %in% dict_$name){
+      out$subtitle <- dict_ %>%
         dplyr::filter(name == "prompt_lab") %>%
         generate_grp() %>%
         dplyr::mutate(value = paste0("Q", grp, ". ", value)) %>%
@@ -213,112 +168,161 @@ cdrs_plt_labels <- function(
     } else {
       out$subtitle <- NULL
     }
-  } else {
-    out$subtitle <- NULL
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # captions
-  if(caption_){
+  # captions ----
+  if(!caption_){
+    out$captions <- NULL
+  } else if(caption_){
+
+    ## missingness ----
     # First, create missing levels description text.
     # eg. "Decline to answer" Q2: 0%, ...
-    missingness_txt <- dict_ %>%
-      dplyr::filter(Variable %in% cols_) %>%
-      # generate_group() %>%
-      dplyr::filter(name == "factors") %>%
-      dplyr::select(-name, -percent) %>%
-      dplyr::filter(encoding != "-97") %>%
-      dplyr::filter(stringr::str_detect(value, "^\\<.+\\>$")) %>%
-      dplyr::mutate(value = stringr::str_remove_all(value, "^\\<|\\>$")) %>%
-      dplyr::group_by(value) %>%
-      tidyr::nest(nested = c("Variable", "frequency")) %>%
-      dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
-        # ~~~~~~~~~~~~~~~~~~~~~
-        # Objective:
-        # Place all values into one string,
-        # reducing variables within a group wherever possible.
-        # Example output might look like:
-        # "Q1 (n = 2), Q13a (n = 9), ..."
-        # ~~~~~~~~~~~~~~~~~~~~~
-        # returns tibble with:
-        # txt [chr]
+    if(T %in% stringr::str_detect(dict_$value, "^\\<.+\\>$")){
 
-        # We begin by seeing if we find common value for each grouping.
-        grp_tb %>%
-          generate_grp() %>%
-          dplyr::group_by(grp) %>%
-          dplyr::mutate(all_equal = length(unique(frequency)) == 1) %>%
-          dplyr::ungroup() %>%
-          # Now that we know if all of one group is equal, eg.
-          # all of Q1_0, Q1_1,...etc are all equal to 2,
-          # we will equate all these "Variable" values to
-          # its group. Following the example above, everything becomes,
-          # Q1.
-          dplyr::mutate(Variable = dplyr::case_when(
-            all_equal & !is.na(grp) ~ paste0("Q", grp),
-            .default = Variable
-          )) %>%
-          # remove unneeded columns
-          dplyr::select(-grp, -all_equal) %>%
-          # Because some "Variable"s have been converted to their group,
-          # eg, from c(Q1_0, Q1_1, ...) to c("Q1", "Q1", ...),
-          # we now have duplicate rows. Let's weed these out.
-          dplyr::distinct() %>%
-          # Finally, flatten these values to a single string in `txt` within
-          # this nested tibble.
-          dplyr::reframe(txt = paste0(
-            Variable,
-            " (n = ",
-            frequency,
-            ")",
-            collapse = ", "
-          ))
-      })
-      ) %>%
-      tidyr::unnest(nested) %>%
-      # Now add the missing factor to the `txt` we generated in the nested col.
-      dplyr::reframe(val_txt = paste0('"', value, '" ', txt, ".")) %>%
-      dplyr::pull(val_txt) %>%
-      # Reduce everything to a single string.
-      paste0(., collapse = " ") %>%
-      paste0("The raw frequencies of missing values that are not conveyed by the graph follows. ", .)
+      missingness_txt <- dict_ %>%
+        # generate_group() %>%
+        dplyr::filter(name == "factors") %>%
+        dplyr::select(-name, -percent) %>%
+        dplyr::filter(encoding != "-97") %>%
+        dplyr::filter(stringr::str_detect(value, "^\\<.+\\>$"))
 
-    response_cnt <- dict_ %>%
-      dplyr::filter(Variable %in% cols_) %>%
-      dplyr::filter(name == "Valid Responses") %>%
-      generate_grp() %>%
-      dplyr::mutate(grp = dplyr::case_when(
-        is.na(grp) ~ Variable,
-        .default = paste0("Q", grp)
-      )) %>%
-      dplyr::group_by(grp) %>%
-      tidyr::nest(nested = c(Variable, value)) %>%
-      dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
-        if(length(unique(grp_tb$value)) == 1){
-          tibble::tibble(txt = grp_tb$value[1])
-        } else {
-          tibble::tibble(txt = grp_tb$value)
-        }
-      })) %>%
-      tidyr::unnest(nested) %>%
-      dplyr::mutate(txt = paste0(grp, " (n = ", txt, ")")) %>%
-      dplyr::pull(txt) %>%
-      paste0(., collapse = ", ") %>%
-      paste0("Valid responses per variable: ", ., ".")
+      if(nrow(missingness_txt) == 0){
+        missingness_txt <- NULL
+      } else {
+        missingness_txt <- missingness_txt %>%
+          dplyr::mutate(value = stringr::str_remove_all(value, "^\\<|\\>$")) %>%
+          dplyr::group_by(value) %>%
+          tidyr::nest(nested = c("Variable", "frequency")) %>%
+          dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
+            # ~~~~~~~~~~~~~~~~~~~~~
+            # Objective:
+            # Place all values into one string,
+            # reducing variables within a group wherever possible.
+            # Example output might look like:
+            # "Q1 (n = 2), Q13a (n = 9), ..."
+            # ~~~~~~~~~~~~~~~~~~~~~
+            # returns tibble with:
+            # txt [chr]
 
+            # We begin by seeing if we find common value for each grouping.
+            grp_tb <- grp_tb %>%
+              generate_grp() %>%
+              dplyr::group_by(grp) %>%
+              dplyr::mutate(all_equal = length(unique(frequency)) == 1) %>%
+              dplyr::ungroup() %>%
+              # Now that we know if all of one group is equal, eg.
+              # all of Q1_0, Q1_1,...etc are all equal to 2,
+              # we will equate all these "Variable" values to
+              # its group. Following the example above, everything becomes,
+              # Q1.
+              dplyr::mutate(Variable = dplyr::case_when(
+                all_equal & !is.na(grp) ~ paste0("Q", grp),
+                .default = Variable
+              )) %>%
+              # remove unneeded columns
+              dplyr::select(-grp, -all_equal) %>%
+              # Because some "Variable"s have been converted to their group,
+              # eg, from c(Q1_0, Q1_1, ...) to c("Q1", "Q1", ...),
+              # we now have duplicate rows. Let's weed these out.
+              dplyr::distinct() %>%
+              # Finally, flatten these values to a single string in `txt` within
+              # this nested tibble.
+              dplyr::reframe(txt = paste0(
+                Variable,
+                " (n = ",
+                frequency,
+                ")",
+                collapse = ", "
+              ))
+
+            # return
+            grp_tb
+          })
+          ) %>%
+          tidyr::unnest(nested) %>%
+          # Now add the missing factor to the `txt` we generated in the nested col.
+          dplyr::reframe(val_txt = paste0('"', value, '" ', txt, ".")) %>%
+          dplyr::pull(val_txt) %>%
+          # Reduce everything to a single string.
+          paste0(., collapse = " ") %>%
+          paste0("The raw frequencies of missing values that are not conveyed by the graph follows. ", .)
+      }
+    } else {
+      missingness_txt <- NULL
+    }
+
+    ## response count ----
+    if(inherits(valid_n, "NULL")){
+      response_cnt <- dict_ %>%
+        dplyr::filter(Variable %in% cols_) %>%
+        dplyr::filter(name == "Valid Responses") %>%
+        generate_grp() %>%
+        dplyr::mutate(grp = dplyr::case_when(
+          is.na(grp) ~ Variable,
+          .default = paste0("Q", grp)
+        )) %>%
+        dplyr::group_by(grp) %>%
+        tidyr::nest(nested = c(Variable, value)) %>%
+        dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
+          if(length(unique(grp_tb$value)) == 1){
+            tibble::tibble(txt = grp_tb$value[1])
+          } else {
+            tibble::tibble(txt = grp_tb$value)
+          }
+        })) %>%
+        tidyr::unnest(nested) %>%
+        dplyr::mutate(txt = paste0(grp, " (n = ", txt, ")")) %>%
+        dplyr::pull(txt)
+
+      if(length(response_cnt) > 1){
+        response_cnt <- NULL
+      }
+    } else {
+      response_cnt <- paste0(" (n = ", valid_n, ")")
+    }
+
+    ## store caption ----
     # Now we store everything for output
     out$caption <- paste0(
       "California Delta Residents Survey (2023) data were collected in the first quarter of 2023. ",
       "Total (n = ",
-      dict_$value[dict_$Variable == "DRS_ID" &
-                    dict_$name == "Total (n)"],
+      dict_$value[dict_$name == "Total (n)"][1],
       "). ",
-      response_cnt,
-      " ",
-      missingness_txt
-    )
-  } else {
-    out$captions <- NULL
+      ifelse(!inherits(response_cnt, "NULL"),
+             response_cnt %>%
+               paste0(collapse = ", ") %>%
+               paste0("Valid responses ", ., "."),
+             ""),
+      ifelse(is.null(missingness_txt),
+             "",
+             paste0(c(" ",
+               missingness_txt)))
+    ) %>%
+      stringr::str_squish()
+
+    ## alphabetical cap ----
+    # If we have alphabet, add to captions.
+    if(inherits(qid_labels, "character")){
+      if(qid_labels == "alphabet"){
+        if("level" %in% names(out$labels)){
+          cap_alpha <- out$labels %>%
+            dplyr::mutate(alpha_txt = paste0(alphabet, ". ", level))
+        } else {
+          cap_alpha <- out$labels %>%
+            dplyr::mutate(alpha_txt = paste0(alphabet, ". ", label))
+        }
+
+        alpha_text <- paste0(cap_alpha$alpha_txt, collapse = ", ")
+
+        out$caption <- paste0(
+          out$caption,
+          "Factors: ",
+          alpha_text
+        )
+      }
+    }
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -333,43 +337,121 @@ cdrs_plt_labels <- function(
 #' @param data_ the DRS data.
 #' @param cols_ the columns of interest.
 #' @param dict_ the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
-#' @param level_ character. The name of the level you want to keep. This is useful for questions with dichotomous response options like `"Yes"`, that you wish to isolate. Should be used with `cdrs_plt_bar`.
 #' @param remove_angle_brackets logical.
 #' @param is_weighted logical.
+#' @param txt_options either NULL or a list providing parameters for `cdrs_plt_txt()`.
+#' @param sort_ logical. Sort variables/levels by magnitude of the mean.
+#' @param title_size numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.
+#' @param param_file character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.
 #' @return object of class tibble, data set proportions.
 #' @export
 cdrs_plt_prep <- function(
     data_,
     cols_,
     dict_ = NULL,
-    level_ = NULL,
+    drop_missingness = FALSE,
     remove_angle_brackets = TRUE,
-    is_weighted = TRUE
+    is_weighted = TRUE,
+    txt_options = NULL,
+    sort_ = TRUE,
+    title_size = 14,
+    param_file = system.file("extdata",
+                             "plot_parameters.xlsx",
+                             package = "cdrs")
 ){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Argument error check
-  stopifnot(class(cols_) == "character" &
+  stopifnot(inherits(cols_, "character") &
               length(cols_) > 0)
 
-  stopifnot("data.frame" %in% class(data_) |
-              "tibble" %in% class(data_))
+  stopifnot(inherits(data_, "data.frame"))
 
-  stopifnot("data.frame" %in% class(dict_) |
-              "tibble" %in% class(dict_) |
-              is.null(dict_))
+  stopifnot(inherits(dict_, "data.frame") |
+              inherits(dict_, "NULL"))
 
-  stopifnot(is.null(level_) |
-              class(level_) == "character")
+  stopifnot(inherits(drop_missingness, "logical"))
+
+  stopifnot(inherits(txt_options, "list") |
+              inherits(txt_options, "NULL"))
+
+  stopifnot(inherits(title_size, "numeric"))
+
+  stopifnot(inherits(param_file, "character"))
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Remove angle brackets.
-  if(remove_angle_brackets){
-    data_ <- remove_angle_brackets(data_,
-                                   cols_)
+  # Create output list
+  out <- list()
+
+  # Add static elements
+  out$title_size <- title_size
+
+  axis_wrap <- 20
+  legend_wrap <- 20
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Determine plotting logic
+  # (ie. what type of plot)
+  logic_ <- plt_logic(
+    file_ = param_file,
+    cols_ = cols_
+  )
+
+  # set plot type
+  out$type <- logic_$plot_type1 %>%
+    unique()
+
+  # Force sort_ to be FALSE if ordinal,
+  # and there's only one variable.
+  # (Note, in cases where there are two ordinal variables,
+  # what is sorted is not the levels, but the variables themselves.
+  # And where there is only one variable that is "categorical",
+  # the levels do get sorted.)
+  if(out$type == "ordinal" &
+     length(unique(logic_$Variable)) == 1){
+    sort_ <- FALSE
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Get proportions
+  # Strip dictionary of unneeded columns
+  dict_ <- dict_ %>%
+    dplyr::filter(Variable %in% cols_)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Convert <Missingness> to NA ----
+  if(drop_missingness){
+    # convert <values> to NA
+    data_ <- purrr::map_dfc(data_, function(x){
+      if(class(x)[1] == "factor"){
+        matches_to_NA(x)
+      } else {
+        x
+      }
+    })
+
+    # drop `value` that have <>
+    dict_ <- dict_ %>%
+      dplyr::filter(stringr::str_detect(value, "^\\<.+\\>$", negate = T))
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Remove angle brackets ----
+  if(remove_angle_brackets){
+    data_ <- remove_angle_brackets(data_,
+                                   cols_)
+    dict_ <- remove_angle_brackets(dict_, cols_ = "value")
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Retrieve Valid N ----
+  valid_n <- data_ %>%
+    dplyr::select(tidyselect::any_of(cols_)) %>%
+    tidyr::drop_na() %>%
+    nrow()
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Get proportions ----
+  # tibble columns:
+  # variable, levels, mean, SE, percent, percent_lab
   if(is_weighted){
     prep_ <- purrr::map_dfr(cols_,
                              ~cdrs_props(data_ = data_,
@@ -382,78 +464,217 @@ cdrs_plt_prep <- function(
                              ))
   }
 
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Remove other levels
-  if(!is.null(level_)){
-    # Usually, we only want "Yes" for bar plots.
-    # Note, `!!` is non-standard evaluation (NSE).
-    # See Wickham's Advanced R.
+  # For stacked plots, small values of label overlap
+  if(out$type == "ordinal"){
     prep_ <- prep_ %>%
-      dplyr::filter(levels == !!level_)
+      dplyr::mutate(percent_lab = dplyr::case_when(
+        percent < 10 ~ NA_character_,
+        .default = percent_lab
+      ))
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Add descriptive details for plotting labels.
-  if(!is.null(dict_)){
+  # Filter one level ----
+  # Usually, we only want "Yes" for dichotomous questions for bar plots,
+  # so this is the use case.
+  if(out$type == "dichotomous"){
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Rewrite `variable` with "unique label".
-    # Example: "Q13a" becomes "Rising sea levels".
-    # In other words, this serves as the labels on the Y-axis for bar plots.
-    if("response_lab" %in% dict_$name){
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      # create table of values to replace "variable" column in prep_.
-      # var_replacement will either be an empty tibble
-      # with dim(var_replacement) == integer(c(0,0-)),
-      # or it will offer a tibble we can use a join function with.
-      var_replacement <- purrr::map_dfr(
-        .x = cols_,
-        .f = function(var){
-          sub_dict <- dict_ %>%
-            dplyr::filter(Variable == var)
+    # get affirmative level
+    level_ <- logic_$affirmative_level %>%
+      unique()
 
-          if("response_lab" %in% sub_dict$name){
-            tibble::tibble(
-              variable = var,
-              label = sub_dict %>%
-                dplyr::filter(name == "response_lab") %>%
-                dplyr::pull(value)
-            )
-          } else {
-            NULL
-          }
-        })
+    # validation
+    stopifnot(length(level_) == 1)
 
-      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      # re-create variable column with labels derived from dictionary.
-      if(!identical(
-        dim(var_replacement),
-        as.integer(c(0,0))
-      )){
-        prep_ <- prep_ %>%
-          # join with table derived from dict.
-          dplyr::left_join(var_replacement, by = "variable") %>%
-          # In cases where nothing was matched for the `label`,
-          # ie. its `NA`,
-          # set it to the value in `variable`.
-          dplyr::mutate(label = dplyr::case_when(
-            is.na(label) ~ variable,
-            .default = label
-          )) %>%
-          # Convert to factor.
-          dplyr::mutate(label = forcats::as_factor(label)) %>%
-          # Remove old `variable` column
-          dplyr::select(-variable) %>%
-          # Rename it.
-          dplyr::rename(variable = label)
-      }
+    # filter affirmative level only
+    prep_ <- prep_ %>%
+      dplyr::filter(levels %in% level_) %>%
+      dplyr::mutate(levels = forcats::fct_drop(levels))
+
+    # Remove unused levels from dictionary.
+    dict_ <- dict_ %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      dplyr::mutate(levels_filter = dplyr::case_when(
+        name == "factors" & value == level_ ~ T,
+        name != "factors" ~ T,
+        .default = F
+      )) %>%
+      dplyr::filter(levels_filter) %>%
+      dplyr::select(-levels_filter)
+
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Sort ----
+  # Do we want to arrange levels/variables by size?
+  if(sort_){
+    if(out$type %in% c("dichotomous", "ordinal")){
+
+      prep_ <- prep_ %>%
+        tidyr::nest(.by = variable,
+                    .key = "nested") %>%
+        dplyr::mutate(max_val = purrr::map_vec(nested, function(tb){
+          levels_ <- levels(tb$levels)
+
+          lvl_ <- levels_[1]
+          # return
+          tb$mean[tb$levels==lvl_]
+
+        })) %>%
+        dplyr::arrange(max_val) %>%
+        dplyr::select(-max_val) %>%
+        tidyr::unnest("nested") %>%
+        dplyr::mutate(variable = forcats::as_factor(variable))
+
+    } else if(out$type %in% c("categorical")) {
+      prep_ <- prep_ %>%
+        dplyr::arrange(mean) %>%
+        dplyr::mutate(levels = forcats::as_factor(as.character(levels)))
     }
 
+
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Run cdrs_plt_txt ----
+  # Add descriptive details for plotting labels.
+  if(inherits(dict_, "data.frame")){
+
+    if(inherits(txt_options, "NULL")){
+      txt_ <- cdrs_plt_txt(
+        dict_ = dict_,
+        cols_ = cols_,
+        qid_labels = "short",
+        title_ = NULL,
+        subtitle_ = F,
+        caption_ = F,
+        valid_n = valid_n,
+        param_file = param_file
+      )
+    } else {
+      txt_ <- do.call(
+        what = cdrs_plt_txt,
+        args = c(
+          list(
+            dict_ = dict_,
+            cols_ = cols_,
+            param_file = param_file,
+            valid_n = valid_n
+          ),
+          txt_options
+        )
+      )
+    }
+
+    # create variable and level id's
+    if("labels" %in% names(txt_)){
+
+      if("alphabet" %in% names(txt_$labels)){
+        prep_ <- prep_
+
+        if(out$type %in% c("dichotomous")){
+          prep_ <- prep_ %>%
+            dplyr::left_join(y = txt_$labels %>%
+                               dplyr::select(Variable, alphabet),
+                             by = c("variable" = "Variable")) %>%
+            dplyr::rename(var_id = alphabet) %>%
+            dplyr::mutate(var_id = forcats::as_factor(var_id))
+        } else if(out$type %in% c("categorical")) {
+          prep_ <- prep_ %>%
+            dplyr::left_join(y = txt_$labels %>%
+                               dplyr::select(level, alphabet),
+                             by = c("levels" = "level")) %>%
+            dplyr::rename(lvl_id = alphabet) %>%
+            dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
+        }
+      }
+
+      if("short_label" %in% names(txt_$labels)){
+        # determine first if we should str_wrap text
+        should_wrap <- txt_$labels$short_label %>%
+          unique() %>%
+          purrr::map_vec(.,
+                         ~stringr::str_length(.x) > axis_wrap)
+
+        should_wrap <- T %in% should_wrap
+
+        if(should_wrap){
+          txt_$labels$short_label <- purrr::map_vec(
+            .x = txt_$labels$short_label,
+            .f = ~stringr::str_wrap(.x, width = axis_wrap)
+          )
+        }
+
+        # now create var_id
+        prep_ <- prep_ %>%
+          dplyr::left_join(y = txt_$labels %>%
+                      dplyr::select(Variable, short_label),
+                    by = c("variable" = "Variable")) %>%
+          dplyr::rename(var_id = short_label) %>%
+          dplyr::mutate(var_id = forcats::as_factor(var_id))
+      }
+
+      if("short_level" %in% names(txt_$labels)){
+        # determine first if we should str_wrap text
+        should_wrap <- txt_$labels$short_level %>%
+          unique() %>%
+          purrr::map_vec(
+            .x = .,
+            .f = ~stringr::str_length(.x) > legend_wrap)
+
+        should_wrap <- T %in% should_wrap
+
+        if(should_wrap){
+          txt_$labels$short_level <- purrr::map_vec(
+            .x = txt_$labels$short_level,
+            .f = ~stringr::str_wrap(.x, width = legend_wrap)
+          )
+        }
+
+        prep_ <- prep_ %>%
+          dplyr::left_join(y = txt_$labels %>%
+                             dplyr::select(level, short_level),
+                    by = c("levels" = "level")) %>%
+          dplyr::rename(lvl_id = short_level) %>%
+          dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
+      }
+    } else {
+      # When no 'labels' from cdrs_plt_txt provided,
+      # we want to wrap long text.
+
+      if(out$type %in% c("categorical")){
+        prep_ <- prep_ %>%
+          mutate(levels = stringr::str_wrap(levels,
+                                           width = axis_wrap) %>%
+                   forcats::as_factor())
+      }
+      # else if(out$type %in% c("dichotomous")){
+      #   prep_ <- prep_ %>%
+      #     mutate(variable = stringr::str_wrap(variable,
+      #                                         width = axis_wrap) %>%
+      #              forcats::as_factor())
+      # }
+
+
+    }
+
+    if(out$type %in% c("ordinal")){
+      prep_ <- prep_ %>%
+        dplyr::mutate(percent_lab = forcats::as_factor(
+          as.character(percent_lab)))
+    }
+
+    out <- append(out, txt_)
+    out <- append(out, list(
+      prep = prep_
+      ))
+  } else {
+    out <- append(out, list(prep = prep_))
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return
-  prep_
+  out
 }
 
 #' Plot a pie chart.
@@ -461,27 +682,29 @@ cdrs_plt_prep <- function(
 #' @param prep_ the tibble returned from `cdrs_plt_prep.`
 #' @return an object of class ggplot.
 #' @export
-#'
-#' @examples
-#' dat <- cdrs_read_example()
-#' prep_ <- cdrs_plt_prep(data_ = dat, cols_ = "Q2")
-#' cdrs_plt_pie(prep_)
 cdrs_plt_pie <- function(
     prep_
 ){
   # What number of factors do we have?
-  n_fct <- nrow(prep_)
+  n_fct <- nrow(prep_$prep)
 
   # Create a palette
   pal <- qual_pal(n_fct)
 
-  ggplot2::ggplot(
-    data = prep_,
+  # Determine level id column
+  if("lvl_id" %in% names(prep_$prep)){
+    fill_ <- "lvl_id"
+  } else {
+    fill_ <- "levels"
+  }
+
+  plt_ <- ggplot2::ggplot(
+    data = prep_$prep,
     mapping =
       ggplot2::aes(
         x = "",
         y = mean,
-        fill = levels
+        fill = !!rlang::sym(fill_)
       )) +
     # position_stack reverse = T is needed for text labeling to work
     ggplot2::geom_col(
@@ -489,7 +712,7 @@ cdrs_plt_pie <- function(
       width = 1) +
     # ggplot2::geom_col(width = 1) +
     ggplot2::geom_label(
-      ggplot2::aes(label = percent),
+      ggplot2::aes(label = percent_lab),
       position = ggplot2::position_stack(
         vjust = 0.5,
         reverse = TRUE),
@@ -501,17 +724,27 @@ cdrs_plt_pie <- function(
     # add colors
     ggplot2::scale_fill_manual(values = magrittr::set_names(pal, NULL)) +
     # text layered over pie
-    ggplot2::coord_polar(theta = "y") +
+    ggplot2::coord_polar(theta = "y")
     # ggplot2::scale_y_continuous(breaks = props_$pos,
     #                    labels = props_$percent) +
+
+  plt_ <- plt_decorate(plt_ = plt_,
+                       prep_ = prep_) +
+    # overwrite some theme elements
+    # TODO fix redundancy
     ggplot2::theme(
       axis.ticks = ggplot2::element_blank(),
       axis.title = ggplot2::element_blank(),
       axis.text = ggplot2::element_blank(),
       # axis.text = ggplot2::element_text(size = 15),
       # legend.position = "none", # Removes the legend
-      panel.background = ggplot2::element_rect(fill = "white"))
+      panel.background = ggplot2::element_rect(fill = "white"
+                                               ),
+      legend.title = ggplot2::element_blank()
+      )
 
+  # return
+  plt_
 }
 
 #' Dichotomous Question Bar Plots.
@@ -524,20 +757,36 @@ cdrs_plt_pie <- function(
 cdrs_plt_bar <- function(
     prep_
 ){
+  stopifnot(inherits(prep_, "list"))
+  stopifnot(c("type", "prep") %in% names(prep_))
+  if(prep_$type != "dichotomous"){
+    warning(
+      stringr::str_glue(
+        "Passing {prep_$type} type plot into cdrs_plt_bar."
+      )
+    )
+  }
 
-  ggplot2::ggplot(
-    data = prep_,
+  if("var_id" %in% names(prep_$prep)){
+    y_ <- "var_id"
+  } else {
+    y_ <- "variable"
+  }
+
+  plt_ <- ggplot2::ggplot(
+    data = prep_$prep,
     mapping = ggplot2::aes(
       x = percent,
-      y = variable
+      y = !!rlang::sym(y_)
     )) +
     ggplot2::geom_bar(
       stat = "identity"
     ) +
     # Scale
-    ggplot2::scale_x_continuous(limits = c(0,100),
-                                # expand = expansion(mult = c(0, 0))
-                                expand = c(0,0)) +
+    ggplot2::scale_x_continuous(
+      limits = c(0,100),
+      # expand = expansion(mult = c(0, 0))
+      expand = c(0,0)) +
     # Y-axis Label
     ggplot2::ylab("") +
     ggplot2::xlab("Percent") +
@@ -546,6 +795,11 @@ cdrs_plt_bar <- function(
       legend.position = "none"
     )
 
+  plt_ <- plt_decorate(plt_ = plt_,
+                       prep_ = prep_)
+
+  # return
+  plt_
 }
 
 #' Creates stacked bar plot.
@@ -558,21 +812,75 @@ cdrs_plt_bar <- function(
 cdrs_plt_stacked <- function(
     prep_
 ){
-  ggplot2::ggplot(data = prep_,
-                  mapping = ggplot2::aes(x = mean,
-                                         y = variable,
-                                         fill = levels)) +
-    ggplot2::geom_bar(stat = "identity") +
-    ggplot2::scale_fill_brewer(type = "qual") +
+
+
+
+  if("var_id" %in% names(prep_$prep)){
+    y_ <- "var_id"
+  } else {
+    y_ <- "variable"
+  }
+
+  # Set up data for geom_label()
+  # (Note, the problem is placing the label correctly
+  # is actually quite difficult. This function determine where
+  # along the line between 1:100 or in our case 0:1 where a label
+  # should exist.)
+  prep_$prep <- prep_$prep %>%
+    dplyr::group_by(!!rlang::sym(y_)) %>%
+    mutate(pos = cumpos(mean)/100)
+
+  # Create plot.
+  plt_ <- ggplot2::ggplot(
+    data = prep_$prep,
+    mapping = ggplot2::aes(
+      x = mean,
+      y = !!rlang::sym(y_),
+      fill = levels
+    )
+  ) +
+    ggplot2::geom_col(
+      position = ggplot2::position_stack()
+    ) +
+    {
+      if(prep_$type == "ordinal"){
+        ggplot2::scale_fill_brewer(type = "div")
+      } else {
+        ggplot2::scale_fill_brewer(type = "qual")
+      }
+    } +
     ggplot2::scale_x_continuous(
       breaks = c(0, 0.25, 0.5, 0.75, 1),
       labels = c("0", "25%", "50%", "75%", "100%"),
       expand = c(.05, .05)
     ) +
     ggplot2::scale_y_discrete(expand = c(0, 0)) +
+    ggplot2::geom_label(
+      mapping = ggplot2::aes(
+        # importantly, here we provide the position
+        # that we derived manually.
+        x = pos,
+        label = percent_lab
+        ),
+      size = (prep_$title_size/4),
+      label.padding = ggplot2::unit(0.15, "lines"),
+      fill = "#ffffff",
+      color = "#333333",
+      label.size = NA,
+      na.rm = T,
+      show.legend = F
+    ) +
     ggplot2::labs(x = "",
                   y = "") +
     ggplot2::theme_bw()
+
+  # add title, subtitle, caption, etc.
+  plt_ <- plt_decorate(plt_ = plt_,
+                       prep_ = prep_) +
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank()
+    )
+
+  # return
+  plt_
 }
-
-
