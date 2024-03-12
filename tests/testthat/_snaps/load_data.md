@@ -5,6 +5,7 @@
     Message
       Loading fabricated DRS data. Do not draw conclusions from analyses of this synthesized data.
     Output
+      $data
       # A tibble: 200 x 148
          DRS_ID  DistributionChannel UserLanguage geoid.county Zone  Q1_0  Q1_1  Q1_2 
          <fct>   <fct>               <fct>        <fct>        <fct> <fct> <fct> <fct>
@@ -25,4 +26,21 @@
       #   Q4_2 <fct>, Q4_3 <fct>, Q4_4 <fct>, Q4_5 <fct>, Q6_0 <fct>, Q6_1 <fct>,
       #   Q6_2 <fct>, Q6_3 <fct>, Q6_4 <fct>, Q6_5 <fct>, Q6_6 <fct>, Q6_7 <fct>,
       #   Q6_8 <fct>, Q6_9 <fct>, Q7_0 <fct>, Q7_1 <fct>, Q7_2 <fct>, Q7_3 <fct>, ...
+      
+      $dict
+      # A tibble: 1,307 x 6
+         Variable            name             value         encoding frequency percent
+         <chr>               <chr>            <chr>         <chr>    <chr>     <chr>  
+       1 DRS_ID              Notes            The ID numbe~ <NA>     <NA>      <NA>   
+       2 DRS_ID              R Class          factor        <NA>     <NA>      <NA>   
+       3 DRS_ID              Total (n)        2208          <NA>     <NA>      <NA>   
+       4 DRS_ID              System (missing) 0             <NA>     <NA>      <NA>   
+       5 DRS_ID              Valid Responses  2208          <NA>     <NA>      <NA>   
+       6 DRS_ID              Unique Values    2208          <NA>     <NA>      <NA>   
+       7 DRS_ID              Example Factor   DRS1450       <NA>     <NA>      <NA>   
+       8 DistributionChannel Label            Distribution~ <NA>     <NA>      <NA>   
+       9 DistributionChannel Notes            This column ~ <NA>     <NA>      <NA>   
+      10 DistributionChannel R Class          factor        <NA>     <NA>      <NA>   
+      # i 1,297 more rows
+      
 
