@@ -1,4 +1,63 @@
 
+#' Removes angle brackets from missing variable levels.
+#'
+#' Remove angle brackets around missing variable levels. This is often used for plotting functions.
+#'
+#' @param data_ DRS data.frame, tibble or vector.
+#' @param cols_ is a character vector (or `NULL`) containing name of columns of interest.
+#' @return the transformed DRS data set (tibble), or transformed factor/character vector.
+remove_angle_brackets <- function(
+    data_,
+    cols_ = NULL
+){
+  stopifnot(inherits(data_, "data.frame") |
+              inherits(data_, "factor") |
+              inherits(data_, "character"))
+
+  if(inherits(data_, "factor")){
+    # factor ----
+    data_ %>%
+      forcats::fct_relabel(
+        ~stringr::str_remove_all(., "[<>]")
+      ) %>%
+      return()
+
+  } else if(inherits(data_, "character")) {
+    # character ----
+    data_ %>%
+      stringr::str_remove_all(., "[<>]") %>%
+      return()
+
+  } else if(is.null(cols_)){
+    # data.frame, no cols_ ----
+    # Apply this across all columns.
+    # First, get columns with <Missing values>
+    fltr <- purrr::map_vec(
+      data_,
+      ~T %in% stringr::str_detect(.x, "\\<.+\\>"))
+    remove_angle_brackets(
+      data_ = data_,
+      cols_ = fltr[fltr == T] %>%
+        names()
+    )
+  } else {
+    # data.frame, with cols_ ----
+    # apply to specified column (cols_).
+    purrr::map2_dfc(data_, names(data_), function(col_, nm){
+      if(nm %in% cols_){
+        col_ %>%
+          forcats::fct_relabel(
+            .fun = ~stringr::str_remove_all(.x, "^\\<|\\>$")
+          )
+      } else {
+        # not a specified column
+        col_
+      }
+    })
+
+  }
+}
+
 #' Add a grouping column.
 #'
 #' Add a new column in the data set based on qid grouping variable. This
@@ -9,7 +68,8 @@
 #' @return tibble of dict_ with new column 'grp'
 generate_grp <- function(
     dict_,
-    var_ = "Variable"){
+    var_ = "Variable"
+    ){
   dict_ %>%
     dplyr::mutate(grp = dplyr::case_when(
       stringr::str_detect(Variable, "^Q13") ~ "13",
@@ -176,22 +236,11 @@ enrich_dict <- function(
     # Because each `Variable` is duplicated when `left_join`
     # occurs, we must remove duplicate rows.
     dplyr::distinct() %>%
-    # unnest and return
-    tidyr::unnest(nested)
+    # unnest and ungroup
+    tidyr::unnest(nested) %>%
+    dplyr::ungroup()
 
   # return
   out
 }
 
-#' Create custom CDRS labels tibble.
-#'
-#' Creates custom CDRS data labels for each question in the public data set. These labels help in making succinct and clear plots. These labels are available as a CSV file in the {cdrs} package itself, under /extdata. This function makes the table (as a tibble) easily accessible.
-#' @return tibble.
-#' @export
-cdrs_labels_table <- function(){
-  readr::read_csv(file = system.file("extdata",
-                                     "public_labels.csv",
-                                     package = "cdrs"),
-                  show_col_types = F
-  )
-}
