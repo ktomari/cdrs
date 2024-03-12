@@ -33,117 +33,131 @@ fabricated_data <- cdrs_read_example(return_dict = T)
 
 *Pages 21-22*
 
-### Gender
+NOTE: Temporarily disabled. Please check back in late March.
 
-The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column.
+<!-- ### Gender -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "SEX_P",
-  dict_ = fabricated_data$dict
-)
+<!-- The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column. -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ```{r} -->
 
-### Age
+<!-- cols_ <- "SEX_P" -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--     data_ = fabricated_data$data, -->
+<!--     cols_ = cols_, -->
+<!--     dict_ = fabricated_data$dict, -->
+<!--     drop_missingness = T, -->
+<!--     remove_angle_brackets = TRUE, -->
+<!--     is_weighted = TRUE, -->
+<!--     txt_options = list( -->
+<!--       qid_labels = "short", -->
+<!--       title_ = "long", -->
+<!--       subtitle_ = F, -->
+<!--       caption_ = T -->
+<!--     ), -->
+<!--     sort_ = T -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "AGE_P",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Age -->
 
-### Race
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "AGE_P", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "RACE_P",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Race -->
 
-### Education
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "RACE_P", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "EDU_P",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Education -->
 
-### Income
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "EDU_P", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "INCOME_P",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Income -->
 
-### Home Ownership
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "INCOME_P", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "HOMEOWNERSHIP_P",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Home Ownership -->
 
-### Residential Designation
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "HOMEOWNERSHIP_P", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "Q2",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Residential Designation -->
 
-### Political ideology
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "Q2", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
 
-```{r}
-plot_prep <- cdrs_plt_prep(
-  data_ = fabricated_data$data,
-  cols_ = "Q34",
-  dict_ = fabricated_data$dict
-)
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 
-cdrs_plt_pie(
-  prep_ = plot_prep
-)
-```
+<!-- ### Political ideology -->
+
+<!-- ```{r} -->
+<!-- plot_prep <- cdrs_plt_prep( -->
+<!--   data_ = fabricated_data$data, -->
+<!--   cols_ = "Q34", -->
+<!--   dict_ = fabricated_data$dict -->
+<!-- ) -->
+
+<!-- cdrs_plt_pie( -->
+<!--   prep_ = plot_prep -->
+<!-- ) -->
+<!-- ``` -->
 

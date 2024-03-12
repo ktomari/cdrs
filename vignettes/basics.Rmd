@@ -16,78 +16,80 @@ knitr::opts_chunk$set(
 
 Here are the packages this vignette relies upon. In order to use the DRS data, you only need the first two. We will also make use of some tidyverse family of functions to explore the data.
 
-```{r setup, message = F}
-library(cdrs)
-library(survey)
-# tidyverse packages:
-library(dplyr)
-```
+Temporarily disabled, please check back in late march.
 
-## Introduction
+<!-- ```{r setup, message = F} -->
+<!-- library(cdrs) -->
+<!-- library(survey) -->
+<!-- # tidyverse packages: -->
+<!-- library(dplyr) -->
+<!-- ``` -->
 
-The {cdrs} package is designed to work with both the [publicly available DRS data set](https://doi.org/10.3886/E195447V1) and various collaborator versions. In this vignette, we'll explore some of the basic commands and how to design your workflow.
+<!-- ## Introduction -->
 
-## Reading Data
+<!-- The {cdrs} package is designed to work with both the [publicly available DRS data set](https://doi.org/10.3886/E195447V1) and various collaborator versions. In this vignette, we'll explore some of the basic commands and how to design your workflow. -->
 
-Assuming you've downloaded your data, you should record the file path to your data. The data can either be in a zip file, or an unzipped folder with three core files: the data as a `.csv`, the metadata as an `.xlsx`, and the hash file as `.txt`. So your file path should end with either the `.zip` file extension, or simply the folder name that contains those three core files.
+<!-- ## Reading Data -->
 
-In the example below, we're going to access the fabricated data set that comes with the {cdrs} package. This fabricated data has no analytical utility since all the values are randomly generated. However it's useful for example purposes! As a final note, your file path might appear something like "~/Documents/cdrs/DRS public data_2023_12_01.zip", but since we're accessing the fabricated data from this package, we have to use the command `system.file`. Don't be distressed, your path can be a simple string (ie. text).
+<!-- Assuming you've downloaded your data, you should record the file path to your data. The data can either be in a zip file, or an unzipped folder with three core files: the data as a `.csv`, the metadata as an `.xlsx`, and the hash file as `.txt`. So your file path should end with either the `.zip` file extension, or simply the folder name that contains those three core files. -->
 
-```{r}
-# record the file path to the data.
-path_ <- system.file("extdata/demo", package = "cdrs")
-# Under normal circumstances (ie. when you're working the real CDRS data set),
-# your `path_` will be a single string, for example:
-# path_ <- "~/Documents/drs/DRS public data_2023_12_01.zip"
+<!-- In the example below, we're going to access the fabricated data set that comes with the {cdrs} package. This fabricated data has no analytical utility since all the values are randomly generated. However it's useful for example purposes! As a final note, your file path might appear something like "~/Documents/cdrs/DRS public data_2023_12_01.zip", but since we're accessing the fabricated data from this package, we have to use the command `system.file`. Don't be distressed, your path can be a simple string (ie. text). -->
 
-# read the data.
-dat1 <- cdrs_read(path_ = path_)
+<!-- ```{r} -->
+<!-- # record the file path to the data. -->
+<!-- path_ <- system.file("extdata/demo", package = "cdrs") -->
+<!-- # Under normal circumstances (ie. when you're working the real CDRS data set), -->
+<!-- # your `path_` will be a single string, for example: -->
+<!-- # path_ <- "~/Documents/drs/DRS public data_2023_12_01.zip" -->
 
-# show the top 6 rows.
-head(dat1)
-```
+<!-- # read the data. -->
+<!-- dat1 <- cdrs_read(path_ = path_) -->
 
-You can access this fabricated data using the same `system.file` command, or alternatively used our example function.
+<!-- # show the top 6 rows. -->
+<!-- head(dat1) -->
+<!-- ``` -->
 
-```{r}
-dat1 <- cdrs_read_example()
-```
+<!-- You can access this fabricated data using the same `system.file` command, or alternatively used our example function. -->
 
-## Complex Survey Design
+<!-- ```{r} -->
+<!-- dat1 <- cdrs_read_example() -->
+<!-- ``` -->
 
-The Delta Residents Survey is an example of a survey that uses complex survey design. Such an approach changes our approach to estimating population statistics and this affects our standard errors. Read more about this in our [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_weights.html).
+<!-- ## Complex Survey Design -->
 
-In order to mitigate bias and correctly estimate population statistics and errors, and accommodate our survey's use of stratification and post-hoc weights, we need to begin by specifying a "survey design object." This is where Thomas Lumley's {survey} package shines! Normally, you would have to call `survey::svydesign()` and specify it, but we do the specification for you. The only thing you have to decide is whether or not to include a finite population correction (fpc). In practice we observed no real differences, probably because our survey sample was sufficiently small relative to the total population.
+<!-- The Delta Residents Survey is an example of a survey that uses complex survey design. Such an approach changes our approach to estimating population statistics and this affects our standard errors. Read more about this in our [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_weights.html). -->
 
-We begin by subsetting the data. Nothing fancy is happening in this subset, other than we are making sure no `NA` values appear in the survey design variables: `Zone` and `WTFINAL`.
+<!-- In order to mitigate bias and correctly estimate population statistics and errors, and accommodate our survey's use of stratification and post-hoc weights, we need to begin by specifying a "survey design object." This is where Thomas Lumley's {survey} package shines! Normally, you would have to call `survey::svydesign()` and specify it, but we do the specification for you. The only thing you have to decide is whether or not to include a finite population correction (fpc). In practice we observed no real differences, probably because our survey sample was sufficiently small relative to the total population. -->
 
-```{r}
-# Create a subset of the data with columns: Q2, Zone, and WTFINAL
-sub1 <- cdrs_subset(dat1, "Q2")
+<!-- We begin by subsetting the data. Nothing fancy is happening in this subset, other than we are making sure no `NA` values appear in the survey design variables: `Zone` and `WTFINAL`. -->
 
-# create design survey design object.
-des <- cdrs_design(data_ = sub1, set_fpc = T)
+<!-- ```{r} -->
+<!-- # Create a subset of the data with columns: Q2, Zone, and WTFINAL -->
+<!-- sub1 <- cdrs_subset(dat1, "Q2") -->
 
-# print a summary of the design object.
-des
-```
+<!-- # create design survey design object. -->
+<!-- des <- cdrs_design(data_ = sub1, set_fpc = T) -->
 
-## Example 1. Simple Frequencies
+<!-- # print a summary of the design object. -->
+<!-- des -->
+<!-- ``` -->
 
-If you were to calculate frequencies (ie. a tally) of survey results for question `Q2` as we did before, you would get biased results. We repeat this *incorrect* approach below as a baseline for comparison.
+<!-- ## Example 1. Simple Frequencies -->
 
-```{r}
-dat1 %>% 
-  select(Q2) %>%
-  group_by(Q2) %>%
-  reframe(count = n())
-```
+<!-- If you were to calculate frequencies (ie. a tally) of survey results for question `Q2` as we did before, you would get biased results. We repeat this *incorrect* approach below as a baseline for comparison. -->
 
-What we should do instead is to use our survey design object to calculate the weighted frequency. Remember to include `na.rm = T`! In the example below, this will remove "System Missing" values, ie. it removes respondents that never even read Q2.
+<!-- ```{r} -->
+<!-- dat1 %>%  -->
+<!--   select(Q2) %>% -->
+<!--   group_by(Q2) %>% -->
+<!--   reframe(count = n()) -->
+<!-- ``` -->
 
-```{r}
-survey::svytotal(~Q2, 
-                 design = des, 
-                 na.rm = T)
-```
+<!-- What we should do instead is to use our survey design object to calculate the weighted frequency. Remember to include `na.rm = T`! In the example below, this will remove "System Missing" values, ie. it removes respondents that never even read Q2. -->
+
+<!-- ```{r} -->
+<!-- survey::svytotal(~Q2,  -->
+<!--                  design = des,  -->
+<!--                  na.rm = T) -->
+<!-- ``` -->
 
