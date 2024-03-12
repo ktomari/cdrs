@@ -1,76 +1,39 @@
 # Functions that load or help load the DRS data; and functions that help revise or subset DRS data.
 
-#' Helper function to convert bracketed factor levels to NA.
+#' Read CDRS data dictionary.
 #'
-#' Helper function to convert bracketed factor levels (ie. missingness levels like <Decline to answer>) to `NA`.
+#' Helper function that reads the CDRS data dictionary in only.
 #'
-#' @param vec_ a factor vector.
-#' @param match_ a character vector of matching phrases.
-#' @return factor vector.
-#' @examples
-#' input_vec <- factor(
-#'   c(
-#'     "Green",
-#'     "Red",
-#'     "<Decline to answer>",
-#'     "Green",
-#'     "<Decline to answer>",
-#'     "<I don't know>"
-#'    )
-#' )
-#'
-#' # Only return NA for "Decline to answer",
-#' # but not "I don't know"
-#' cdrs::matches_to_NA(input_vec, "Decline to answer")
-#'
-#' @noRd
-matches_to_NA <- function(
-    vec_,
-    match_ = NULL
-    ){
-  # Validate
-  stopifnot(
-    class(vec_) == "factor" |
-      length(vec_) > 1
-  )
+#' @param path_ is the path to the dictionary.
+#' @return tibble.
+#' @export
+cdrs_read_dict <- function(
+    path_
+){
+  # retrieve file list.
+  fl <- cdrs_path(path_)
 
-  if(!is.null(match_)){
-    stopifnot(
-      length(vec_) > length(match_)
-    )
-  }
+  # filter only data dictionary row.
+  fl <- fl %>%
+    dplyr::filter(type == "dd")
 
-  # Get levels
-  lvls_ <- levels(vec_)
+  # validation.
+  stopifnot(nrow(fl) == 1)
 
-  # Create regex pattern
-  # If match_ is NULL, capture any <values>
-  # otherwise, detect specific ones.
-  pattern_ <- ifelse(
-    is.null(match_),
-    "^<.+>$",
-    paste0(
-      "^<(?:",
-      paste0(match_, collapse = "|"),
-      ")>$"
-    )
-  )
+  # load dd
+  dd <- readxl::read_xlsx(path = fl$path,
+                          sheet = "Variables")
 
-  # Create logical filter based on matching.
-  fltr <- stringr::str_detect(
-    string = lvls_,
-    pattern = pattern_
-  )
+  # Re-write smart quotes with straight quotes
+  dd <- purrr::map_dfc(dd, txt_to_straight_quotes)
 
-  # If there are any levels that match,
-  # convert them to NA
-  if(T %in% fltr){
-    vec_[as.character(vec_) %in% lvls_[fltr]] <- NA
-  }
+  # clean up dd (remove empty lines)
+  dd <- dd %>%
+    tidyr::drop_na(name) %>%
+    tidyr::fill(Variable, .direction = "down")
 
   # return
-  vec_ %>%
-    forcats::fct_drop()
+  dd
 }
 
 #' Revises DRS data such that different forms of &lt;Missing Levels&gt; may be converted to NA.
@@ -96,37 +59,25 @@ cdrs_revise <- function(
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Validate inputs. ----
   stopifnot(
-    base::is.data.frame(data_) |
-      tibble::is_tibble(data_)
+    inherits(dd, "data.frame")
   )
   stopifnot(
-    base::is.data.frame(dd) |
-      tibble::is_tibble(dd) |
-      base::is.character(dd)
+    inherits(dd, "data.frame") |
+      inherits(dd, "character")
   )
   stopifnot(
-    base::is.logical(preserve_uncertainty) |
-      base::is.logical(preserve_refused) |
-      base::is.logical(preserve_factor_numeric) |
-      base::is.logical(preserve_editorials)
+    inherits(preserve_uncertainty, "logical") |
+      inherits(preserve_refused, "logical") |
+      inherits(preserve_factor_numeric, "logical") |
+      inherits(preserve_editorials, "logical")
   )
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Prepare Data Dictionary ----
   # First, if its a path, load the dd in.
-  if(is.character(dd)){
-    # if the character doesn't end in xlsx, its probably
-    # a path to a zip or folder, so run cdrs_validate.
-    if(stringr::str_detect(string = dd,
-                           pattern = "\\.xlsx$",
-                           negate = T)){
-      fl <- cdrs_validate(dd)
-      dd <- fl$path[fl$type == "dd"]
-    }
-
-    # load dd
-    dd <- readxl::read_xlsx(path = dd,
-                            sheet = "Variables")
+  if(inherits(dd, "character")){
+    # `dd` is a character, probably a path.
+    dd <- cdrs_read_dict(dd)
   }
 
   # Second, see if the dd is properly formatted.
@@ -140,7 +91,7 @@ cdrs_revise <- function(
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Revision ----
-  out <- purrr::map2_dfc(data_, colnames(data_), function(x, nm){
+  data_ <- purrr::map2_dfc(data_, colnames(data_), function(x, nm){
     # Get DRS class based on data dictionary
     cl <- dd$value[dd$Variable == nm &
                      dd$name == "R Class"]
@@ -219,8 +170,38 @@ cdrs_revise <- function(
     x
   })
 
-  # return df/tb
-  out
+  # Drop unused factors in the data dictionary
+  dd <- dd %>%
+    tidyr::nest(nested = c("name",
+                           "value",
+                           "encoding",
+                           "frequency",
+                           "percent"),
+                .by = Variable) %>%
+    dplyr::mutate(nested = purrr::map2(
+      nested,
+      Variable,
+      function(grp_tb, var_) {
+        # get current levels from main data_
+        lvls_ <- data_ %>%
+          dplyr::select(tidyselect::all_of(var_)) %>%
+          dplyr::distinct() %>%
+          tidyr::drop_na(tidyselect::all_of(var_)) %>%
+          dplyr::pull(tidyselect::all_of(var_)) %>%
+          as.character()
+
+        grp_tb %>%
+          dplyr::filter(name != "factors" |
+                          value %in% lvls_)
+      })) %>%
+    tidyr::unnest(nested) %>%
+    dplyr::ungroup()
+
+  # return list
+  list(
+    data = data_,
+    dict = dd
+  )
 }
 
 #' Validate DRS data against a SHA256 hash.
@@ -232,80 +213,18 @@ cdrs_revise <- function(
 cdrs_validate <- function(
     path_) {
 
-  # Validate File Exists ----
-  stopifnot(
-    file.exists(path_)
-  )
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Is path_ a Zip File? ----
-  # If path_ leads to a zip file, then unzip it.
-  # First, determine if its a zip.
-  is_zip <- grepl(
-    pattern = "\\.zip$",
-    x = basename(path_),
-    perl = TRUE
-  )
-
-  # Second, we manipulate the zip file: unzip it into a temporary directory.
-  if (is_zip) {
-    # get output directory name.
-    out_dir <- basename(path_) %>%
-      stringr::str_remove("\\.zip$")
-
-    # Define the temporary directory to extract files to
-    temp_dir <- tempdir()
-
-    # Full output dir.
-    out_dir <- file.path(temp_dir, out_dir)
-
-    # Unzip the file
-    utils::unzip(
-      zipfile = path_,
-      junkpaths = T,
-      exdir = out_dir
-    )
-
-    # Replace old path.
-    path_ <- out_dir
-  }
+  # Retrieve file list.
+  fl <- cdrs_path(path_)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Validate Files ----
   # Validate that all the necessary files are present.
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Load list of files (fl, ie. file list).
-  fl <- tibble::tibble(
-    file = list.files(path_),
-    path = list.files(path_, full.names = TRUE)
-  )
 
   # Please note, that there is an 'internal data' data.frame,
   # `necessary_files`, which is used below. It was defined in
   # raw-data/internal_data.R
-  if (!exists("necessary_files")) {
-    # This error is to help with development only.
-    # It shouldn't be raised once the package is completed.
-    stop("Missing 'necessary_files'")
-  }
-
-  # Determine if each file in the filelist is a necessary file,
-  # and if so, determine type.
-  fl$type <- purrr::map_vec(fl$file, function(path_) {
-    # Obtain location of name in necessary_files
-    i <- purrr::map_vec(necessary_files$regex, function(regex_) {
-      stringr::str_detect(path_, regex_)
-    }) |>
-      which()
-
-    # if file is not a necessary file.
-    if (identical(i, integer(0))) {
-      return(as.character(NA))
-    }
-
-    # Return
-    necessary_files$name[i]
-  })
+  stopifnot(exists("necessary_files"))
 
   # Validate that all necessary files present.
   if (length(
@@ -366,7 +285,7 @@ cdrs_validate <- function(
 #' @param path_ is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.
 #' @param relevel_ either a character or list. This parameter determines if the data should be 1) revised according to the `"default"` settings of `cdrs_revise()`, which converts certain missing values like <Missing> to `NA`; 2) remain untouched, `"none"`, leaving any corrections to factor levels for post-reading; or 3) a list of logical values with the matching parameters of `cdrs_revise()`.
 #' @param return_dict logical. If `TRUE` returns list with both the data dictionary and the data. The data dictionary is an optional parameter in some {cdrs} functions that adds additional metadata information for deliverables (eg. figure descriptions for plots).
-#' @return Depending on `return_dict`, either returns a tibble of the Delta Residents Survey 2023 data set; or returns a list with two tibbles: the data dictionary and the DRS data set.
+#' @return Depending on `return_dict`, either returns a tibble of the Delta Residents Survey 2023 data set; or returns a list with two tibbles: the data dictionary, `dict` and the DRS data set, `data`.
 #' @export
 #'
 #' @examples
@@ -376,17 +295,17 @@ cdrs_validate <- function(
 cdrs_read <- function(
     path_ = NULL,
     relevel_ = "default",
-    return_dict = FALSE
+    return_dict = TRUE
     ) {
 
-  if(is.null(path_)){
+  if(inherits(path_, "NULL")){
     return(cdrs_read_example())
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Validate argument: path_
   stopifnot(
-    is.character(path_) | length(path_) != 1
+    inherits(path_, "character") | length(path_) != 1
   )
 
   # Run cdrs_validate ----
@@ -396,15 +315,14 @@ cdrs_read <- function(
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load Dictionary ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  dd <- fl %>%
+  # starting with the file list,
+  # find the data dictionary path
+  # and then read it.
+  dd_path <- fl %>%
     dplyr::filter(type == "dd") %>%
-    dplyr::pull(path) %>%
-    readxl::read_xlsx(., sheet = "Variables")
+    dplyr::pull(path)
 
-  # clean up dd (remove empty lines)
-  dd <- dd %>%
-    tidyr::drop_na(name) %>%
-    tidyr::fill(Variable, .direction = "down")
+  dd <- cdrs_read_dict(dd_path)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Load Data ----
@@ -457,7 +375,9 @@ cdrs_read <- function(
     col_types = paste0(col_order$readr_type,
       collapse = ""
     )
-  )
+  ) %>%
+    # convert smart quotes to straight quotes.
+    purrr::map_dfc(., txt_to_straight_quotes)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Set Order of Ordinal Values ----
@@ -537,18 +457,19 @@ cdrs_read <- function(
   }) # End of map()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Convert Levels ----
+  # Convert Levels w/ cdrs_revise ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   if(inherits(relevel_, "character")){
+    # if relevel_ is a character vector...
     if (relevel_ == "default" ) {
       # Convert <Missingness> to NA
-      data <- cdrs_revise(
+      revised_list <- cdrs_revise(
         data_ = data,
         dd = dd
       )
     } else if (relevel_ == "none") {
-      data <- cdrs_revise(
+      revised_list <- cdrs_revise(
         data_ = data,
         dd = dd,
         preserve_uncertainty = T,
@@ -559,7 +480,7 @@ cdrs_read <- function(
     }
   } else if(inherits(relevel_, "list")){
     # Format data using provided list.
-    data <- do.call(
+    revised_list <- do.call(
       # apply cdrs_revise function...
       what = cdrs_revise,
       # with the following arguments:
@@ -577,20 +498,17 @@ cdrs_read <- function(
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Sort columns in the order as they appear in the data dictionary.
-  data <- data %>%
+  revised_list$data <- revised_list$data %>%
     dplyr::select(
-      dd$Variable %>% unique()
+      revised_list$dict$Variable %>% unique()
     )
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return
   if(return_dict){
-    list(
-      data = data,
-      dict = enrich_dict(dd)
-    )
+    revised_list
   } else {
-    data
+    revised_list$data
   }
 }
 
@@ -609,7 +527,7 @@ cdrs_read <- function(
 #' demo <- cdrs_read_example()
 cdrs_read_example <- function(
     relevel_ = "default",
-    return_dict = FALSE) {
+    return_dict = TRUE) {
   message("Loading fabricated DRS data. Do not draw conclusions from analyses of this synthesized data.")
   cdrs_read(
     path_ = system.file("extdata", "demo", package = "cdrs"),
@@ -617,6 +535,3 @@ cdrs_read_example <- function(
     return_dict = return_dict
   )
 }
-
-
-
