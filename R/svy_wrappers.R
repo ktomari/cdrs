@@ -94,7 +94,7 @@ cdrs_design <- function(
 #'
 #' @examples
 #' results <- cdrs::cdrs_crosstab(
-#'      data_ = cdrs::cdrs_read_example(),
+#'      data_ = cdrs::cdrs_read_example(return_dict = FALSE),
 #'      cols_ = c("AGE_P", "Q1_1")
 #'      )
 cdrs_crosstab <- function(
@@ -140,7 +140,7 @@ cdrs_crosstab <- function(
 #' @importFrom methods is
 #'
 #' @examples
-#' dat <- cdrs_read_example()
+#' dat <- cdrs_read_example(return_dict = FALSE)
 #' # numeric column
 #' numeric_mean_tb <- cdrs_props(dat, "Q1a")
 #' # single-response multiple choice
@@ -169,6 +169,8 @@ cdrs_props <- function(
   na.rm = T)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # NOTE: As of this writing, there is no broom::tidy() method for
+  # objects of class 'svystat'. Thus, we must manually tidy it.
   # We don't want the svystat object,
   # we want a nicely formatted tibble.
   if(!return_stat){
