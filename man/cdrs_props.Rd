@@ -20,7 +20,7 @@ either a tibble or svystat object.
 This function is a wraparound function for survey::svymean. By default, it produces a tibble with the mean and standard error (calculated by linearization, see {survey} package for more details). Alternatively, return the 'svystat' object, which is simply the object yielded by survey::svymean.
 }
 \examples{
-dat <- cdrs_read_example()
+dat <- cdrs_read_example(return_dict = FALSE)
 # numeric column
 numeric_mean_tb <- cdrs_props(dat, "Q1a")
 # single-response multiple choice

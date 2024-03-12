@@ -4,7 +4,7 @@
 \alias{cdrs_read}
 \title{Read the California Delta Residents Survey Dataset}
 \usage{
-cdrs_read(path_ = NULL, relevel_ = "default", return_dict = FALSE)
+cdrs_read(path_ = NULL, relevel_ = "default", return_dict = TRUE)
 }
 \arguments{
 \item{path_}{is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.}
@@ -14,7 +14,7 @@ cdrs_read(path_ = NULL, relevel_ = "default", return_dict = FALSE)
 \item{return_dict}{logical. If \code{TRUE} returns list with both the data dictionary and the data. The data dictionary is an optional parameter in some {cdrs} functions that adds additional metadata information for deliverables (eg. figure descriptions for plots).}
 }
 \value{
-Depending on \code{return_dict}, either returns a tibble of the Delta Residents Survey 2023 data set; or returns a list with two tibbles: the data dictionary and the DRS data set.
+Depending on \code{return_dict}, either returns a tibble of the Delta Residents Survey 2023 data set; or returns a list with two tibbles: the data dictionary, \code{dict} and the DRS data set, \code{data}.
 }
 \description{
 Loads, validates, and corrects factor levels in the Delta Residents Survey

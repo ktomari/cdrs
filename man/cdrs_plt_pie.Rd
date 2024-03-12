@@ -15,8 +15,3 @@ an object of class ggplot.
 \description{
 Plot a pie chart.
 }
-\examples{
-dat <- cdrs_read_example()
-prep_ <- cdrs_plt_prep(data_ = dat, cols_ = "Q2")
-cdrs_plt_pie(prep_)
-}

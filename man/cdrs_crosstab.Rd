@@ -21,7 +21,7 @@ Run a 2-way weighted cross-tabulation on DRS data.
 }
 \examples{
 results <- cdrs::cdrs_crosstab(
-     data_ = cdrs::cdrs_read_example(),
+     data_ = cdrs::cdrs_read_example(return_dict = FALSE),
      cols_ = c("AGE_P", "Q1_1")
      )
 }

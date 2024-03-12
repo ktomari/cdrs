@@ -4,7 +4,7 @@
 \alias{cdrs_read_example}
 \title{Load fabricated example data.}
 \usage{
-cdrs_read_example(relevel_ = "default", return_dict = FALSE)
+cdrs_read_example(relevel_ = "default", return_dict = TRUE)
 }
 \arguments{
 \item{relevel_}{character or list. See documentation for \code{?cdrs_read()}.}

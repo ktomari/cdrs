@@ -8,9 +8,13 @@ cdrs_plt_prep(
   data_,
   cols_,
   dict_ = NULL,
-  level_ = NULL,
+  drop_missingness = FALSE,
   remove_angle_brackets = TRUE,
-  is_weighted = TRUE
+  is_weighted = TRUE,
+  txt_options = NULL,
+  sort_ = TRUE,
+  title_size = 14,
+  param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
 }
 \arguments{
@@ -20,11 +24,17 @@ cdrs_plt_prep(
 
 \item{dict_}{the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
 
-\item{level_}{character. The name of the level you want to keep. This is useful for questions with dichotomous response options like \code{"Yes"}, that you wish to isolate. Should be used with \code{cdrs_plt_bar}.}
-
 \item{remove_angle_brackets}{logical.}
 
 \item{is_weighted}{logical.}
+
+\item{txt_options}{either NULL or a list providing parameters for \code{cdrs_plt_txt()}.}
+
+\item{sort_}{logical. Sort variables/levels by magnitude of the mean.}
+
+\item{title_size}{numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.}
+
+\item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
 }
 \value{
 object of class tibble, data set proportions.
