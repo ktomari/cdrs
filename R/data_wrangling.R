@@ -142,40 +142,4 @@ cdrs_composite_index <- function(
     dplyr::bind_cols(idx)
 }
 
-#' Removes angle brackets from missing variable levels.
-#'
-#' Remove angle brackets around missing variable levels. This is often used for plotting functions.
-#'
-#' @param data_ DRS data.frame or tibble.
-#' @param cols_ is a character vector (or `NULL`) containing columns of interest.
-#' @return the transformed DRS data set (tibble).
-remove_angle_brackets <- function(
-    data_,
-    cols_ = NULL
-    ){
-  if(is.null(cols_)){
-    # Apply this across all columns.
-    # First, get columns with <Missing values>
-    fltr <- purrr::map_vec(data_,
-                           ~T %in% stringr::str_detect(.x, "\\<.+\\>"))
-    remove_angle_brackets(
-      data_ = data_,
-      cols_ = fltr[fltr == T] %>%
-        names()
-    )
-  } else {
-    # apply to specified column (cols_).
-    purrr::map2_dfc(data_, names(data_), function(col_, nm){
-      if(nm %in% cols_){
-        col_ %>%
-          forcats::fct_relabel(
-            .fun = ~stringr::str_remove_all(.x, "^\\<|\\>$")
-          )
-      } else {
-        # not a specified column
-        col_
-      }
-    })
 
-  }
-}
