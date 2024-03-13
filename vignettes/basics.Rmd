@@ -1,5 +1,5 @@
 ---
-title: "basics"
+title: "Basics"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{basics}
@@ -14,82 +14,282 @@ knitr::opts_chunk$set(
 )
 ```
 
-Here are the packages this vignette relies upon. In order to use the DRS data, you only need the first two. We will also make use of some tidyverse family of functions to explore the data.
+## Introduction
 
-Temporarily disabled, please check back in late march.
+The {cdrs} package is designed to work with both the [publicly available DRS data set](https://doi.org/10.3886/E195447V1) and various collaborator versions. In this vignette, we'll explore some of the basic commands and how to design your workflow.
 
-<!-- ```{r setup, message = F} -->
-<!-- library(cdrs) -->
-<!-- library(survey) -->
-<!-- # tidyverse packages: -->
-<!-- library(dplyr) -->
-<!-- ``` -->
+Here are the packages this vignette relies upon. However, the {cdrs} package implicitly relies upon many more packages than those listed here.
 
-<!-- ## Introduction -->
+```{r setup, message = F}
+library(cdrs)
+library(survey)
+# tidyverse packages:
+library(dplyr)
+```
 
-<!-- The {cdrs} package is designed to work with both the [publicly available DRS data set](https://doi.org/10.3886/E195447V1) and various collaborator versions. In this vignette, we'll explore some of the basic commands and how to design your workflow. -->
+## Reading Data
 
-<!-- ## Reading Data -->
+Assuming you've downloaded your data, you should record the file path to your data. The data can either be in a zip file, or an unzipped folder with three core files: 
 
-<!-- Assuming you've downloaded your data, you should record the file path to your data. The data can either be in a zip file, or an unzipped folder with three core files: the data as a `.csv`, the metadata as an `.xlsx`, and the hash file as `.txt`. So your file path should end with either the `.zip` file extension, or simply the folder name that contains those three core files. -->
+* the data as a `.csv`
+* the metadata as an `.xlsx`
+* and the hash file as `.txt`. 
 
-<!-- In the example below, we're going to access the fabricated data set that comes with the {cdrs} package. This fabricated data has no analytical utility since all the values are randomly generated. However it's useful for example purposes! As a final note, your file path might appear something like "~/Documents/cdrs/DRS public data_2023_12_01.zip", but since we're accessing the fabricated data from this package, we have to use the command `system.file`. Don't be distressed, your path can be a simple string (ie. text). -->
+So your file path should end with either the `.zip` file extension, or simply the folder name that contains those three core files.
 
-<!-- ```{r} -->
-<!-- # record the file path to the data. -->
-<!-- path_ <- system.file("extdata/demo", package = "cdrs") -->
-<!-- # Under normal circumstances (ie. when you're working the real CDRS data set), -->
-<!-- # your `path_` will be a single string, for example: -->
-<!-- # path_ <- "~/Documents/drs/DRS public data_2023_12_01.zip" -->
+In the example below, we're going to access the fabricated data set that comes with the {cdrs} package. This fabricated data is useful for code examples, but it has no analytical utility since all the values are randomly generated. 
 
-<!-- # read the data. -->
-<!-- dat1 <- cdrs_read(path_ = path_) -->
+A sidebar, your file path might appear something like `"~/Documents/cdrs/DRS public data_2023_12_01.zip"`, but since we're accessing the *fabricated data* from this package, we have to use the command `system.file`, which is just one way to access it. Don't be distressed, your path can be a simple string (ie. text).
 
-<!-- # show the top 6 rows. -->
-<!-- head(dat1) -->
-<!-- ``` -->
+```{r}
+# Record the file path to the data.
+# Under normal circumstances (ie. when you're working the real CDRS data set),
+# your `path_` will be a single string, for example:
+path_ <- "~/Documents/drs/DRS public data_2023_12_01.zip"
 
-<!-- You can access this fabricated data using the same `system.file` command, or alternatively used our example function. -->
+# Overwrite the above path_ with 
+# the path to the fabricated data set,
+# nestled within the {cdrs} package itself.
+path_ <- system.file("extdata/demo", package = "cdrs")
 
-<!-- ```{r} -->
-<!-- dat1 <- cdrs_read_example() -->
-<!-- ``` -->
+# read the data.
+dat1 <- cdrs_read(path_ = path_)
 
-<!-- ## Complex Survey Design -->
+# show the top 6 rows.
+head(dat1$data)
+```
 
-<!-- The Delta Residents Survey is an example of a survey that uses complex survey design. Such an approach changes our approach to estimating population statistics and this affects our standard errors. Read more about this in our [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_weights.html). -->
+You'll notice that before I call `head()` on the data.frame/tibble, that I use the `$` operator to access `data`. This is because by default, `cdrs_read` returns the DRS data table and the data dictionary. More accurately, `cdrs_read` returns a list with two elements by default, the `data` and `dict`.
 
-<!-- In order to mitigate bias and correctly estimate population statistics and errors, and accommodate our survey's use of stratification and post-hoc weights, we need to begin by specifying a "survey design object." This is where Thomas Lumley's {survey} package shines! Normally, you would have to call `survey::svydesign()` and specify it, but we do the specification for you. The only thing you have to decide is whether or not to include a finite population correction (fpc). In practice we observed no real differences, probably because our survey sample was sufficiently small relative to the total population. -->
+```{r}
+names(dat1)
+```
 
-<!-- We begin by subsetting the data. Nothing fancy is happening in this subset, other than we are making sure no `NA` values appear in the survey design variables: `Zone` and `WTFINAL`. -->
+If you want to play with the fabricated data, you may use the same `system.file` command above, or alternatively use our `cdrs_read_example` function.
 
-<!-- ```{r} -->
-<!-- # Create a subset of the data with columns: Q2, Zone, and WTFINAL -->
-<!-- sub1 <- cdrs_subset(dat1, "Q2") -->
+```{r}
+dat1 <- cdrs_read_example()
+```
 
-<!-- # create design survey design object. -->
-<!-- des <- cdrs_design(data_ = sub1, set_fpc = T) -->
+**Warning.** The data loaded in the code above are—to reiterate—fabricated data. In other words, it is not the survey data! The fabricated data were constructed from the public data set, but values were randomly sampled from a pool of actual values (thus resembling a uniform distribution). Do not draw analytical conclusions from it! It should only be used for practice with this package.
 
-<!-- # print a summary of the design object. -->
-<!-- des -->
-<!-- ``` -->
+## Complex Survey Design
 
-<!-- ## Example 1. Simple Frequencies -->
+The Delta Residents Survey is an example of a survey that uses complex survey design. Such an approach changes our method for estimating population statistics and affects standard errors. Read more about this in our [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_weights.html).
 
-<!-- If you were to calculate frequencies (ie. a tally) of survey results for question `Q2` as we did before, you would get biased results. We repeat this *incorrect* approach below as a baseline for comparison. -->
+In order to mitigate bias and correctly estimate population statistics and errors, and accommodate our survey's use of stratification and post-hoc weights, we need to begin by specifying a "survey design object." This is where Thomas Lumley's {survey} package shines! Normally, you would have to call `survey::svydesign()` and specify it, but we do the specification for you. The only thing you have to decide is whether or not to include a finite population correction (fpc). In practice we observed minor differences from changing the fpc. By default, it is set to `TRUE`.
 
-<!-- ```{r} -->
-<!-- dat1 %>%  -->
-<!--   select(Q2) %>% -->
-<!--   group_by(Q2) %>% -->
-<!--   reframe(count = n()) -->
-<!-- ``` -->
+We begin by subsetting the data. Nothing fancy is happening in this subset, other than we are making sure no `NA` values appear in the survey design variables: `Zone` and `WTFINAL`.
 
-<!-- What we should do instead is to use our survey design object to calculate the weighted frequency. Remember to include `na.rm = T`! In the example below, this will remove "System Missing" values, ie. it removes respondents that never even read Q2. -->
+```{r}
+# Create a subset of the data with columns: Q2, Zone, and WTFINAL
+sub1 <- cdrs_subset(dat1$data, "Q2")  # (optional)
 
-<!-- ```{r} -->
-<!-- survey::svytotal(~Q2,  -->
-<!--                  design = des,  -->
-<!--                  na.rm = T) -->
-<!-- ``` -->
+# create design survey design object.
+des <- cdrs_design(data_ = sub1, set_fpc = T)
+
+# print a summary of the design object.
+des
+```
+
+## Example 1. Frequencies
+
+If you were to calculate frequencies (ie. a tally) of survey results for question `Q2` as we do below, you would get biased results. We only perform this as a baseline for comparison.
+
+```{r}
+dat1$data %>%
+  select(Q2) %>%
+  group_by(Q2) %>%
+  reframe(count = n())
+```
+
+What we should do instead is to use our survey design object to calculate the weighted frequency. Remember to include `na.rm = T`! In the example below, this will remove "System Missing" values, ie. it removes respondents that never even read Q2.
+
+```{r}
+survey::svytotal(~Q2,
+                 design = des,
+                 na.rm = T)
+```
+
+(As a sidebar, we do use this simple frequency algorithm when reporting survey sample *demographics*, eg. `AGE_P`, in the 2023 Summary Report. This simple frequency is appropriate there because we are reporting the actual response rate for the demographics used to build survey weights.)
+
+## Example 2. Proportions
+
+You can either use the `survey::svymean` directly, or use our `cdrs_props` function, which can either return the `svystats` object (from `survey::svymean`) or a tibble.
+
+When using `cdrs_props` the columns you specify must be a character vector.
+
+```{r}
+cdrs_props(data_ = dat1$data, 
+           col_ = "Q2")
+```
+
+## Example 3. Broken-up Questions
+
+The way responses are recorded for most questions in the DRS involves a division of one question over multiple columns in the DRS data set. For example, a question like Q1, which asks:
+
+> "1. Please tell us which of the following apply to you. Do you currently...? Select all that apply."
+
+...involves multiple "checkbox" style options. This is recorded in the DRS data as a possible response to each option, including: 
+
+* None of these 
+* Live in or near the Delta region
+* Work in the Delta
+* Visit the Delta for fun or recreation
+* Farm in the Delta
+* Commute through the Delta
+
+One respondent then might select one or more of these, or choose to skip it entirely. We discuss skipped values in our documentation on "missing" or "missingness" [here](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html). We'll leave this matter aside for now and instead focus on how to estimate weighted proportions for all these columns in the DRS data.
+
+The `cdrs_props` function only allows you to perform this weighted proportion calculation on a single column at a time. We do this for `Q1_0` (None of these) below.
+
+```{r}
+cdrs::cdrs_props(dat1$data,
+                 col_ = "Q1_0")
+```
+
+But in order to calculate weighted proportions for all of Q1, we have to use a loop or a [functional](https://adv-r.hadley.nz/functionals.html) like `lapply` or `purrr::map`. We demonstrate all three of these approaches below.
+
+### Loop
+
+```{r}
+# generate character vector of column names: Q1_0, Q1_1, ... Q1_5
+columns_ <- paste0("Q1_", 0:5)
+# create output list
+output_ <- list()
+
+# run loop
+for(column_name in columns_){
+  output_[[column_name]] <- cdrs::cdrs_props(
+    data_ = dat1$data,
+    col_ = column_name)
+}
+
+# take output list, 
+# and convert to single tibble.
+do.call(rbind, output_)
+```
+
+### Base `lapply`
+
+```{r}
+lapply(
+  X = paste0("Q1_", 0:5),
+  FUN = function(column_name){
+    cdrs::cdrs_props(data_ = dat1$data,
+                          col_ = column_name)
+    }
+) |>
+  do.call(what = rbind)
+```
+### purrr map
+
+This tidyverse approach is our preferred method and what is used in most of the underlying code for the {cdrs} package. Here, we use a variant of `purrr::map` that finishes with a row binding operation (specified by `dfr`, read as "data.frame row bind").
+
+```{r}
+purrr::map_dfr(
+  .x = paste0("Q1_", 0:5),
+  .f = ~cdrs::cdrs_props(data_ = dat1$data,
+                          col_ = .x)
+)
+```
+
+## Example 4. Missingness
+
+In the previous example, I briefly mentioned "missingness". In the following discussion, I assume you have already read the [documentation](https://ktomari.github.io/DeltaResidentsSurvey/doc_missing_and_ordinal.html) on it.
+
+In this example, I answer the question: "What if you want to calculate weighted proportions for missingness values?"
+
+The DRS dataset has special values, including uncertainty and missing values, enclosed in angle brackets, like `"<I don't know>"`. By default, `cdrs_read` only *preserves* uncertainty values (ie. does not convert then to `NA`), and by default it leaves them with angle brackets. We can, however, preserve all missingess values. In order to do this, we must re-read the data set. Simply assign the parameter `relevel_` to `"none"`.
+
+```{r}
+dat2 <- cdrs::cdrs_read_example(relevel_ = "none")
+```
+As a point of comparison, let's look at Q2. Here are the raw frequencies (for the fabricated data).
+
+```{r}
+# relevel_ = "default"
+dat1$data %>%
+  select(Q2) %>%
+  group_by(Q2) %>%
+  reframe(count = n())
+```
+
+```{r}
+# relevel_ = "none"
+dat2$data %>%
+  select(Q2) %>%
+  group_by(Q2) %>%
+  reframe(count = n())
+```
+
+Notice the presence of `"<Decline to answer>"` in the second frequency table above.
+
+We could then feed these into `cdrs_props` to get the weighted values for different missingness values.
+
+```{r}
+cdrs::cdrs_props(data_ = dat2$data,
+           col_ = "Q2")
+```
+
+Note that we can perform the same operations above and also remove angle brackets by using the function `cdrs:::remove_angle_brackets`. (This isn't an exported function of {cdrs}, meaning its primarily used by the package internally. However, we can access it nonetheless by using the three colon operator, `:::`.)
+
+```{r}
+dat2$data %>%
+  cdrs:::remove_angle_brackets() %>%
+  select(Q2) %>%
+  group_by(Q2) %>%
+  reframe(count = n())
+```
+
+You can always remove <missingness> values later if you initially loaded data with `relevel_ = "none"`. You can do this by using `cdrs_revise` on your loaded data list, or simply re-running `cdrs_read` with the appropriate `relevel_` command.
+
+```{r}
+dat3 <- cdrs::cdrs_revise(
+  data = dat2$data,
+  dd = dat2$dict,
+  preserve_uncertainty = F,
+  preserve_refused = F,
+  preserve_factor_numeric = F,
+  preserve_editorials = F
+)
+```
+
+```{r}
+# no <values> are preserved, 
+# ie. even uncertainty values are dropped!
+dat3$data %>%
+  select(Q2) %>%
+  group_by(Q2) %>%
+  reframe(count = n())
+```
+
+We can also do the same thing with `cdrs_read` (which ultimately uses `cdrs_revise`).
+
+```{r}
+dat4 <- cdrs::cdrs_read_example(
+  relevel_ = list(
+    preserve_uncertainty = F,
+    preserve_refused = F,
+    preserve_factor_numeric = F,
+    preserve_editorials = F
+  )
+)
+```
+This should be identical to `dat3`.
+
+```{r}
+identical(dat3, dat4)
+```
+
+See for yourself.
+
+```{r}
+dat4$data %>%
+  select(Q2) %>%
+  group_by(Q2) %>%
+  reframe(count = n())
+```
+
+In summary, example 4 has shown us how to modify different types of \<missingness\> values in the DRS data set. We've seen both how to leave all \<missingness\> values intact by specifying `relevel_` to `"none"`, or selectively choose the kinds of \<missingness\> values to "preserve" using the parameters that begin with `preserve_*`.
 
