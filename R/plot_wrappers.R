@@ -337,7 +337,8 @@ cdrs_plt_txt <- function(
 #' @param data_ the DRS data.
 #' @param cols_ the columns of interest.
 #' @param dict_ the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
-#' @param remove_angle_brackets logical.
+#' @param drop_missingness logical. Determines whether to convert <missingness> values to `NA`.
+#' @param remove_angle_brackets logical. Determines whether to erase angle brackets from <missingness> values.
 #' @param is_weighted logical.
 #' @param txt_options either NULL or a list providing parameters for `cdrs_plt_txt()`.
 #' @param sort_ logical. Sort variables/levels by magnitude of the mean.

@@ -8,14 +8,19 @@ txt_to_straight_quotes <- function(
 ){
   if(inherits(vec_, "factor")){
     # factor ----
+    # Note,
+    # "[\u201C\u201D]" are for "smart quotation marks",
+    # and
+    # "[\u2018\u2019]" are for "smart single quote marks".
     vec_ %>%
-      forcats::fct_relabel(~gsub("[“”]",
+      forcats::fct_relabel(~gsub("[\u201C\u201D]",
                                  "\"",
-                                 gsub("[‘’]",
+                                 gsub("[\u2018\u2019]",
                                       "'", .x)))
   } else if(inherits(vec_, "character")) {
     # character ----
-    gsub("[“”]", "\"", gsub("[‘’]", "'", vec_))
+    gsub("[\u201C\u201D]", "\"",
+         gsub("[\u2018\u2019]", "'", vec_))
   } else {
     # neither, do nothing ----
     vec_

@@ -24,7 +24,9 @@ cdrs_plt_prep(
 
 \item{dict_}{the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
 
-\item{remove_angle_brackets}{logical.}
+\item{drop_missingness}{logical. Determines whether to convert \if{html}{\out{<missingness>}} values to \code{NA}.}
+
+\item{remove_angle_brackets}{logical. Determines whether to erase angle brackets from \if{html}{\out{<missingness>}} values.}
 
 \item{is_weighted}{logical.}
 
