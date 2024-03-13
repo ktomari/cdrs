@@ -50,10 +50,14 @@ matches_to_NA <- function(
     vec_,
     match_ = NULL
 ){
+  # return early
+  if(!inherits(vec_, "factor")){
+    return(vec_)
+  }
+
   # Validate
   stopifnot(
-    inherits(vec_, "factor") |
-      length(vec_) > 1
+    length(vec_) > 1
   )
 
   if(!inherits(match_, "NULL")){
