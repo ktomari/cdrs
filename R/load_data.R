@@ -102,6 +102,18 @@ cdrs_revise <- function(
       return(x)
     }
 
+    # When revising, we may also encounter a
+    # 'factor - numeric' column
+    # but the revision has already been performed.
+    # if some revision operation has already been performed.
+    # For example, you read data into the R environment,
+    # and then you want to edit it. If you pass Q1a, and
+    # it is already numeric, you're out of luck.
+    if(inherits(x, "numeric")){
+      # return early
+      return(x)
+    }
+
     ## uncertainty levels ----
     if(!preserve_uncertainty &
        cl == "factor"){
