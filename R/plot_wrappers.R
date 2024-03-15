@@ -7,21 +7,26 @@
 #' @param dict_ is the data dictionary. All columns in `cols_` must be present in `dict_$Variable`.
 #' @param cols_ variable/column names of the DRS data.
 #' @param qid_labels character. Options include "short", "alphabet", `NULL`. These labels correspond to the table created by `plt_labels()`. If "short", either the variable `short_label` or `short_lvl` is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If `NULL` no table is returned.
-#' @param title_ character. Options include "short", "long" or `NULL`. If "short" the `short_title` is retrieved from the labels table (see `plt_labels()`), If "long", the Label value is retrieved from `dict_`. If `NULL`, nothing is returned.
+#' @param title_form character. Options include "short", "long" or `NULL`. If "short" the `short_title` is retrieved from the labels table (see `plt_labels()`), If "long", the Label value is retrieved from `dict_`. If `NULL`, nothing is returned.
 #' @param subtitle_ logical. If `TRUE` it returns the long title (ie. Label) from the `dict_`.
 #' @param caption_ logical. If `TRUE` a detailed message include valid response counts and missingness variable counts returned.
-#' @param valid_n numeric or `NULL`. Not strictly necessary, but this overrides the value returned from dict_ for Valid Responses. This is useful for old versions of the data dictionary that reported incorrect values.
-#' @param param_file character, path to plot_parameters file.
+#' @param custom_txt list. A list containing any of the following elements: labels, title, subtitle, caption.
+#' @param param_file character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.
 #' @return list. The list could be empty, or have one or more of the following: 'labels', 'title', 'subtitle', and/or 'caption'.
 #' @export
 cdrs_plt_txt <- function(
     dict_,
     cols_,
     qid_labels = NULL,
-    title_ = NULL,
+    title_form = NULL,
     subtitle_ = FALSE,
     caption_ = FALSE,
-    valid_n = NULL,
+    custom_txt = list(
+      labels = NULL,
+      title = NULL,
+      subtitle = NULL,
+      caption = NULL
+    ),
     param_file = system.file("extdata",
                              "plot_parameters.xlsx",
                              package = "cdrs")
@@ -35,12 +40,16 @@ cdrs_plt_txt <- function(
   stopifnot(inherits(qid_labels, "character") |
               inherits(qid_labels, "NULL"))
 
-  stopifnot(inherits(title_, "character") |
-              inherits(title_, "NULL"))
+  stopifnot(inherits(title_form, "character") |
+              inherits(title_form, "NULL"))
 
   stopifnot(inherits(subtitle_, "logical"))
 
   stopifnot(inherits(caption_, "logical"))
+
+  stopifnot(inherits(custom_txt, "list"))
+
+  stopifnot(inherits(param_file, "character"))
 
   # Which column names available in dict_?
   valid_cols <- cols_ %in% (dict_$Variable %>% unique())
@@ -63,7 +72,9 @@ cdrs_plt_txt <- function(
   dict_ <- enrich_dict(dict_)
 
   # load labels, and remove unneeded columns/Variables
-  labs <- plt_labels(dict_ = dict_)
+  labs <- plt_labels(
+    file_ = param_file,
+    dict_ = dict_)
 
   # Check to see if there are labels to add.
   na_labs <- labs %>%
@@ -86,7 +97,10 @@ cdrs_plt_txt <- function(
   # labels/levels ----
   # First, retrieve labels or levels.
   # This section creates `labels_`
-  if(!is.null(qid_labels) & na_labs){
+  if(!inherits(qid_labels, "NULL") &
+     !inherits(custom_txt$labels, "NULL")){
+    out$labels <- custom_txt$labels
+  } else if(!inherits(qid_labels, "NULL") & na_labs){
 
     if(qid_labels == "short"){
       out$labels <- labs %>%
@@ -120,16 +134,18 @@ cdrs_plt_txt <- function(
   # Next retrieve other plot text decoration
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # title ----
-  if(is.null(title_)){
+  if(inherits(title_form, "NULL")){
     out$title <- NULL
-  } else if(title_ == "short"){
+  } else if(!inherits(custom_txt$title, "NULL")){
+    out$title <- custom_txt$title
+  } else if(title_form == "short"){
     out$title <- labs %>%
       dplyr::filter(Variable %in% cols_) %>%
       dplyr::filter(!is.na(short_title)) %>%
       dplyr::pull("short_title") %>%
       unique() %>%
       paste0(., collapse = " & ")
-  } else if(title_ == "long"){
+  } else if(title_form == "long"){
     if("prompt_lab" %in% dict_$name){
       out$title <- dict_ %>%
         dplyr::filter(name == "prompt_lab") %>%
@@ -154,6 +170,8 @@ cdrs_plt_txt <- function(
   # subtitle ----
   if(!subtitle_){
     out$subtitle <- NULL
+  } else if(!inherits(custom_txt$subtitle, "NULL")){
+    out$subtitle <- custom_txt$subtitle
   } else if(subtitle_){
 
     if("prompt_lab" %in% dict_$name){
@@ -174,6 +192,13 @@ cdrs_plt_txt <- function(
   # captions ----
   if(!caption_){
     out$captions <- NULL
+  } else if(!inherits(custom_txt$caption, "NULL")){
+    valid_n <- dict_ %>%
+      dplyr::filter(name == "Valid Responses") %>%
+      dplyr::pull(value) %>%
+      unique() %>%
+      paste0(collapse = ", ")
+    out$caption <- stringr::str_glue(custom_txt$caption)
   } else if(caption_){
 
     ## missingness ----
@@ -254,33 +279,30 @@ cdrs_plt_txt <- function(
     }
 
     ## response count ----
-    if(inherits(valid_n, "NULL")){
-      response_cnt <- dict_ %>%
-        dplyr::filter(Variable %in% cols_) %>%
-        dplyr::filter(name == "Valid Responses") %>%
-        generate_grp() %>%
-        dplyr::mutate(grp = dplyr::case_when(
-          is.na(grp) ~ Variable,
-          .default = paste0("Q", grp)
-        )) %>%
-        dplyr::group_by(grp) %>%
-        tidyr::nest(nested = c(Variable, value)) %>%
-        dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
-          if(length(unique(grp_tb$value)) == 1){
-            tibble::tibble(txt = grp_tb$value[1])
-          } else {
-            tibble::tibble(txt = grp_tb$value)
-          }
-        })) %>%
-        tidyr::unnest(nested) %>%
-        dplyr::mutate(txt = paste0(grp, " (n = ", txt, ")")) %>%
-        dplyr::pull(txt)
 
-      if(length(response_cnt) > 1){
-        response_cnt <- NULL
-      }
-    } else {
-      response_cnt <- paste0(" (n = ", valid_n, ")")
+    response_cnt <- dict_ %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      dplyr::filter(name == "Valid Responses") %>%
+      generate_grp() %>%
+      dplyr::mutate(grp = dplyr::case_when(
+        is.na(grp) ~ Variable,
+        .default = paste0("Q", grp)
+      )) %>%
+      dplyr::group_by(grp) %>%
+      tidyr::nest(nested = c(Variable, value)) %>%
+      dplyr::mutate(nested = purrr::map(nested, function(grp_tb){
+        if(length(unique(grp_tb$value)) == 1){
+          tibble::tibble(txt = grp_tb$value[1])
+        } else {
+          tibble::tibble(txt = grp_tb$value)
+        }
+      })) %>%
+      tidyr::unnest(nested) %>%
+      dplyr::mutate(txt = paste0(grp, " (n = ", txt, ")")) %>%
+      dplyr::pull(txt)
+
+    if(length(response_cnt) > 1){
+      response_cnt <- NULL
     }
 
     ## store caption ----
@@ -337,12 +359,12 @@ cdrs_plt_txt <- function(
 #' @param data_ the DRS data.
 #' @param cols_ the columns of interest.
 #' @param dict_ the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
-#' @param drop_missingness logical. Determines whether to convert <missingness> values to `NA`.
 #' @param remove_angle_brackets logical. Determines whether to erase angle brackets from <missingness> values.
 #' @param is_weighted logical.
 #' @param txt_options either NULL or a list providing parameters for `cdrs_plt_txt()`.
 #' @param sort_ logical. Sort variables/levels by magnitude of the mean.
 #' @param title_size numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.
+#' @param custom_txt list. A list containing any of the following elements: labels, title, subtitle, caption.
 #' @param param_file character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.
 #' @return object of class tibble, data set proportions.
 #' @export
@@ -350,12 +372,17 @@ cdrs_plt_prep <- function(
     data_,
     cols_,
     dict_ = NULL,
-    drop_missingness = FALSE,
     remove_angle_brackets = TRUE,
     is_weighted = TRUE,
     txt_options = NULL,
     sort_ = TRUE,
     title_size = 14,
+    custom_txt = list(
+      labels = NULL,
+      title = NULL,
+      subtitle = NULL,
+      caption = NULL
+    ),
     param_file = system.file("extdata",
                              "plot_parameters.xlsx",
                              package = "cdrs")
@@ -369,8 +396,6 @@ cdrs_plt_prep <- function(
 
   stopifnot(inherits(dict_, "data.frame") |
               inherits(dict_, "NULL"))
-
-  stopifnot(inherits(drop_missingness, "logical"))
 
   stopifnot(inherits(txt_options, "list") |
               inherits(txt_options, "NULL"))
@@ -386,6 +411,7 @@ cdrs_plt_prep <- function(
   # Add static elements
   out$title_size <- title_size
 
+  # character limit before text wrap is performed.
   axis_wrap <- 20
   legend_wrap <- 20
 
@@ -418,36 +444,12 @@ cdrs_plt_prep <- function(
     dplyr::filter(Variable %in% cols_)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Convert <Missingness> to NA ----
-  if(drop_missingness){
-    # convert <values> to NA
-    data_ <- purrr::map_dfc(data_, function(x){
-      if(class(x)[1] == "factor"){
-        matches_to_NA(x)
-      } else {
-        x
-      }
-    })
-
-    # drop `value` that have <>
-    dict_ <- dict_ %>%
-      dplyr::filter(stringr::str_detect(value, "^\\<.+\\>$", negate = T))
-  }
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Remove angle brackets ----
   if(remove_angle_brackets){
     data_ <- remove_angle_brackets(data_,
                                    cols_)
     dict_ <- remove_angle_brackets(dict_, cols_ = "value")
   }
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Retrieve Valid N ----
-  valid_n <- data_ %>%
-    dplyr::select(tidyselect::any_of(cols_)) %>%
-    tidyr::drop_na() %>%
-    nrow()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Get proportions ----
@@ -502,7 +504,6 @@ cdrs_plt_prep <- function(
       )) %>%
       dplyr::filter(levels_filter) %>%
       dplyr::select(-levels_filter)
-
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -532,8 +533,6 @@ cdrs_plt_prep <- function(
         dplyr::arrange(mean) %>%
         dplyr::mutate(levels = forcats::as_factor(as.character(levels)))
     }
-
-
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -546,10 +545,9 @@ cdrs_plt_prep <- function(
         dict_ = dict_,
         cols_ = cols_,
         qid_labels = "short",
-        title_ = NULL,
+        title_form = NULL,
         subtitle_ = F,
         caption_ = F,
-        valid_n = valid_n,
         param_file = param_file
       )
     } else {
@@ -559,8 +557,7 @@ cdrs_plt_prep <- function(
           list(
             dict_ = dict_,
             cols_ = cols_,
-            param_file = param_file,
-            valid_n = valid_n
+            param_file = param_file
           ),
           txt_options
         )
@@ -570,7 +567,8 @@ cdrs_plt_prep <- function(
     # create variable and level id's
     if("labels" %in% names(txt_)){
 
-      if("alphabet" %in% names(txt_$labels)){
+      if("alphabet" %in% names(txt_$labels) &
+         inherits(custom_txt$labels, "NULL")){
         prep_ <- prep_
 
         if(out$type %in% c("dichotomous")){
@@ -720,7 +718,8 @@ cdrs_plt_pie <- function(
       label.padding = ggplot2::unit(0.15, "lines"),
       fill = "#ffffff",
       color = "#333333",
-      label.size = NA
+      label.size = NA,
+      na.rm = T
       ) +
     # add colors
     ggplot2::scale_fill_manual(values = magrittr::set_names(pal, NULL)) +
