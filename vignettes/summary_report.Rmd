@@ -53,7 +53,7 @@ plot_prep <- cdrs_plt_prep(
     is_weighted = TRUE,
     # minimal labeling
     txt_options = list(
-      qid_labels = "short",
+      label_form = "short",
       title_ = NULL,
       subtitle_ = F,
       caption_ = F
@@ -75,7 +75,7 @@ pie_params <- list(
     is_weighted = TRUE,
     # minimal labeling
     txt_options = list(
-      qid_labels = "short",
+      label_form = "short",
       title_ = NULL,
       subtitle_ = F,
       caption_ = F
@@ -240,11 +240,26 @@ Work in progress.
 ### 1a. Place Attachment
 
 ```{r}
-thematic_ <- readr::read_csv(
-  system.file("extdata", "thematic_barplots.csv",
-            package = "cdrs")
+# First we need to load this simple spreadsheet laying out
+# the graphs we need to make
+
+path_thematic <- system.file("extdata", "plot_thematic.xlsx", 
+                             package = "cdrs")
+
+thematic_labs <- cdrs:::plt_labels(file_ = path_thematic)
+
+cols_ <- thematic_labs$Variable[thematic_labs$short_title == "Place Attachment"]
+
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  param_file = path_thematic
 )
 
-thematic_ %>%
-  tidyr::fill(title, .direction = "down")
+cdrs_plt_bar(plt_prep)
 ```
+
+
+
+
