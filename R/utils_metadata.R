@@ -90,6 +90,12 @@ generate_grp <- function(
 enrich_dict <- function(
     dict
 ){
+  # Sometimes we subset the dictionary for a specific set of variables.
+  # So, we need to see if the "Label" is present.
+  if(!("Label" %in% dict$name)){
+    # return early.
+    return(dict)
+  }
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # First, create a tibble with:
   # "Variable" the original qid.
@@ -244,3 +250,218 @@ enrich_dict <- function(
   out
 }
 
+#' Revise data dictionary based on changed values in data.
+#'
+#' Following systematic changes in the data (such as those performed in `cdrs_revise`), revise the data dictionary to reflect actual data values.
+#'
+#' @param data_ revised DRS data.
+#' @param dict_ original data dictionary
+#' @return tibble (dict)
+revise_dict <- function(
+    data_,
+    dict_
+){
+  # arg validation
+  stopifnot(inherits(data_, "data.frame"))
+  stopifnot(inherits(dict_, "data.frame"))
+
+  # augment dictionary
+  dict_ %>%
+    # place all columns except variable into 'nested'
+    tidyr::nest(.by = Variable,
+                    .key = "nested") %>%
+    mutate(nested = purrr::map2(nested, Variable, function(tb, var_){
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Early skip.
+
+      # derive dictionary class.
+      dict_class <- tb %>%
+        dplyr::filter(name == "R Class") %>%
+        dplyr::pull(value)
+
+      # Skip variables that are listed in the dictionary as a
+      # non-factor R class.
+      # (Why? They would not have had any changes done upon them
+      # in cdrs_revise.)
+      if(!(dict_class %in% c("factor", "factor - numeric"))){
+        return(tb)
+      }
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Start by getting data
+      dat1 <- data_ %>%
+        dplyr::pull(tidyselect::all_of(var_))
+
+      # Now get data without NA
+      dat2 <- dat1[!is.na(dat1)]
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Get descriptive stats.
+      info <- list()
+
+      # R class
+      info$rclass <- tibble::tibble(
+        name = "R Class",
+        value = class(dat1)
+      )
+
+      # Total N
+      info$total_n <- tibble::tibble(
+        name = "Total (n)",
+        value = length(dat1) %>%
+          as.character()
+      )
+
+      # NA count
+      info$sys_miss <- tibble::tibble(
+        name = "System (missing)",
+        value = which(is.na(dat1)) %>%
+          length() %>%
+          as.character()
+      )
+
+      # On rare occasions, column is all NA.
+      if(as.integer(info$total_n$value) ==
+         as.integer(info$sys_miss$value)){
+        # set default dictionary values
+        tb$value[tb$name == "Total (n)"] <- info$total_n$value
+        tb$value[tb$name == "System (missing)"] <- info$sys_miss$value
+        # return early
+        return(
+          tb %>%
+            dplyr::filter(name %in% c(
+              "Label",
+              "R Class",
+              "Total (n)",
+              "System (missing)"
+            ))
+        )
+      }
+
+      # Valid Responses
+      info$valid_n <- tibble::tibble(
+        name = "Valid Responses",
+        value = dat2 %>%
+          length() %>%
+          as.character()
+      )
+
+      # What unique values are present?
+      uniq_ <- dat2 %>%
+        unique()
+
+      # Unique Values N
+      info$unique_n <- tibble::tibble(
+        name = "Unique Values",
+        value = uniq_ %>%
+          length() %>%
+          as.character()
+      )
+
+      # Which <missingness> values were originally in the data?
+      # (Used for info$notes)
+      original_missing <- tb %>%
+        dplyr::filter(name == "factors",
+                      stringr::str_detect(value, "^\\<.+\\>$")) %>%
+        dplyr::pull(value)
+
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Begin keeping notes.
+      info$notes <- ifelse(
+        test = F %in% (original_missing %in% uniq_) &
+          info$sys_miss$value > 0,
+        yes = "For this revised data set, 'System (missing)' no longer signifies that a respondent 'never saw the question'.",
+        no = ""
+      )
+
+      if("Notes" %in% tb$name){
+        info$notes <- c(
+          tb$value[tb$name == "Notes"],
+          info$notes
+        )
+      }
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Changes in factors
+      if(
+        info$rclass$value == "factor" &
+        as.integer(info$unique_n$value) < 10
+      ){
+
+        # Original factors
+        fct1 <- tb$value[tb$name == "factors"]
+
+        # Current factors
+        fct2 <- unique(dat2) %>%
+          as.character()
+
+        # Dropped factors
+        dropped_fct <- fct1[!(fct1 %in% fct2)]
+
+        # if there are dropped factors
+        if(!identical(dropped_fct, character(0))){
+          info$notes <- c(
+            info$notes,
+            stringr::str_glue(
+              "Dropped factor(s): {paste0(dropped_fct, collapse = ', ')}."
+            )
+          )
+        }
+
+        # What is the frequency for the current factors?
+        fcts <- table(dat2) %>%
+          tibble::as_tibble()
+
+        stopifnot(ncol(fcts) == 2)
+
+        names(fcts) <- c("value", "frequency")
+
+        tb_join <- tb %>%
+          dplyr::filter(name == "factors") %>%
+          dplyr::select(value, encoding)
+
+        fcts <- fcts %>%
+          dplyr::mutate(name = "factors") %>%
+          dplyr::mutate(percent = paste0(
+            (frequency/length(dat1) * 100),
+            "%"
+          )) %>%
+          dplyr::left_join(
+            y = tb_join,
+            by = "value"
+          ) %>%
+          dplyr::select(name, value, encoding, frequency, percent)
+
+        info$fct <- purrr::map_dfc(fcts, ~as.character(.x))
+
+      }  # end factors
+
+      # Convert Notes to a tibble.
+      info$notes <- tibble::tibble(
+        name = "Notes",
+        value = paste0(info$notes, collapse = " ")
+      )
+
+      # bind rows
+      info <- dplyr::bind_rows(info)
+
+      # finally, add rows that `tb` has,
+      # but that `info` doesn't have.
+      tbn <- tb$name %>% unique()
+      ifn <- info$name %>% unique()
+
+      # get `name` exclusively in tb
+      tbn <- tbn[!(tbn %in% ifn)]
+      tbn <- tbn[stringr::str_detect(tbn, "factors", negate = T)]
+
+      supplement <- tb %>%
+        dplyr::filter(name %in% tbn)
+
+      info <- dplyr::bind_rows(info, supplement)
+
+      # return
+      info
+    })) %>%
+    tidyr::unnest(nested)
+}

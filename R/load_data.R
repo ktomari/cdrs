@@ -182,32 +182,12 @@ cdrs_revise <- function(
     x
   })
 
+  # revise dictionary ----
   # Drop unused factors in the data dictionary
-  dd <- dd %>%
-    tidyr::nest(nested = c("name",
-                           "value",
-                           "encoding",
-                           "frequency",
-                           "percent"),
-                .by = Variable) %>%
-    dplyr::mutate(nested = purrr::map2(
-      nested,
-      Variable,
-      function(grp_tb, var_) {
-        # get current levels from main data_
-        lvls_ <- data_ %>%
-          dplyr::select(tidyselect::all_of(var_)) %>%
-          dplyr::distinct() %>%
-          tidyr::drop_na(tidyselect::all_of(var_)) %>%
-          dplyr::pull(tidyselect::all_of(var_)) %>%
-          as.character()
-
-        grp_tb %>%
-          dplyr::filter(name != "factors" |
-                          value %in% lvls_)
-      })) %>%
-    tidyr::unnest(nested) %>%
-    dplyr::ungroup()
+  dd <- revise_dict(
+    data_ = data_,
+    dict_ = dd
+  )
 
   # return list
   list(
