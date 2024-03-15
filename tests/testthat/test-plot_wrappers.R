@@ -45,8 +45,8 @@ test_that("cdrs_plt_txt - NULL",{
     object = cdrs_plt_txt(
       dict_ = example_dict,
       cols_ = paste0("Q1_", 0:5),
-      qid_labels = NULL,
-      title_ = NULL,
+      label_form = NULL,
+      title_form = NULL,
       subtitle_ = FALSE,
       caption_ = FALSE
     ),
