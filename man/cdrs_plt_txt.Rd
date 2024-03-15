@@ -7,11 +7,10 @@
 cdrs_plt_txt(
   dict_,
   cols_,
-  qid_labels = NULL,
+  label_form = NULL,
   title_form = NULL,
   subtitle_ = FALSE,
   caption_ = FALSE,
-  custom_txt = list(labels = NULL, title = NULL, subtitle = NULL, caption = NULL),
   param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
 }
@@ -20,15 +19,13 @@ cdrs_plt_txt(
 
 \item{cols_}{variable/column names of the DRS data.}
 
-\item{qid_labels}{character. Options include "short", "alphabet", \code{NULL}. These labels correspond to the table created by \code{plt_labels()}. If "short", either the variable \code{short_label} or \code{short_lvl} is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If \code{NULL} no table is returned.}
+\item{label_form}{character. Options include "short", "alphabet", \code{NULL}. These labels correspond to the table created by \code{plt_labels()}. If "short", either the variable \code{short_label} or \code{short_lvl} is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If \code{NULL} no table is returned.}
 
 \item{title_form}{character. Options include "short", "long" or \code{NULL}. If "short" the \code{short_title} is retrieved from the labels table (see \code{plt_labels()}), If "long", the Label value is retrieved from \code{dict_}. If \code{NULL}, nothing is returned.}
 
 \item{subtitle_}{logical. If \code{TRUE} it returns the long title (ie. Label) from the \code{dict_}.}
 
 \item{caption_}{logical. If \code{TRUE} a detailed message include valid response counts and missingness variable counts returned.}
-
-\item{custom_txt}{list. A list containing any of the following elements: labels, title, subtitle, caption.}
 
 \item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
 }

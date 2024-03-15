@@ -13,7 +13,6 @@ cdrs_plt_prep(
   txt_options = NULL,
   sort_ = TRUE,
   title_size = 14,
-  custom_txt = list(labels = NULL, title = NULL, subtitle = NULL, caption = NULL),
   param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
 }
@@ -33,8 +32,6 @@ cdrs_plt_prep(
 \item{sort_}{logical. Sort variables/levels by magnitude of the mean.}
 
 \item{title_size}{numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.}
-
-\item{custom_txt}{list. A list containing any of the following elements: labels, title, subtitle, caption.}
 
 \item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
 }
