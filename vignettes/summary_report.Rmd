@@ -16,6 +16,9 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(cdrs)
+library(magrittr)
+library(dplyr)
+library(tidyr)
 ```
 
 This document is a work in progress. The purpose of this document is to replicate the functions used in the Summary Report 2023, available on the [California Delta Residents Survey website](https://ktomari.github.io/DeltaResidentsSurvey/). However, since the public data set is not included with the {cdrs} package, we use the fabricated data set instead. As such, you'll see uniform distributions, not the actual results of the survey!
@@ -33,131 +36,215 @@ fabricated_data <- cdrs_read_example(return_dict = T)
 
 *Pages 21-22*
 
-NOTE: Temporarily disabled. Please check back in late March.
+### Gender
 
-<!-- ### Gender -->
+The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column.
 
-<!-- The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column. -->
+```{r}
+# define column
+cols_ <- "SEX_P"
 
-<!-- ```{r} -->
+# create plot preparation object
+plot_prep <- cdrs_plt_prep(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict,
+    remove_angle_brackets = F,
+    is_weighted = TRUE,
+    # minimal labeling
+    txt_options = list(
+      qid_labels = "short",
+      title_ = NULL,
+      subtitle_ = F,
+      caption_ = F
+    ),
+    # don't sort by size
+    sort_ = F
+)
 
-<!-- cols_ <- "SEX_P" -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--     data_ = fabricated_data$data, -->
-<!--     cols_ = cols_, -->
-<!--     dict_ = fabricated_data$dict, -->
-<!--     drop_missingness = T, -->
-<!--     remove_angle_brackets = TRUE, -->
-<!--     is_weighted = TRUE, -->
-<!--     txt_options = list( -->
-<!--       qid_labels = "short", -->
-<!--       title_ = "long", -->
-<!--       subtitle_ = F, -->
-<!--       caption_ = T -->
-<!--     ), -->
-<!--     sort_ = T -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+For the following plots, we want to use the same parameters, so we'll store it in a list and execute `cdrs_plt_prep` with a `do.call`.
 
-<!-- ### Age -->
+```{r}
+pie_params <- list(
+    remove_angle_brackets = F,
+    is_weighted = TRUE,
+    # minimal labeling
+    txt_options = list(
+      qid_labels = "short",
+      title_ = NULL,
+      subtitle_ = F,
+      caption_ = F
+    ),
+    # don't sort by size
+    sort_ = F
+)
+```
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "AGE_P", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Age
 
-<!-- ### Race -->
+```{r}
+cols_ <- "AGE_P"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "RACE_P", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Race
 
-<!-- ### Education -->
+```{r}
+cols_ <- "RACE_P"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "EDU_P", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Education
 
-<!-- ### Income -->
+```{r}
+cols_ <- "EDU_P"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "INCOME_P", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Income
 
-<!-- ### Home Ownership -->
+```{r}
+cols_ <- "INCOME_P"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "HOMEOWNERSHIP_P", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Home Ownership
 
-<!-- ### Residential Designation -->
+```{r}
+cols_ <- "HOMEOWNERSHIP_P"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "Q2", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Residential Designation
 
-<!-- ### Political ideology -->
+```{r}
+cols_ <- "Q2"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
 
-<!-- ```{r} -->
-<!-- plot_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = "Q34", -->
-<!--   dict_ = fabricated_data$dict -->
-<!-- ) -->
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
 
-<!-- cdrs_plt_pie( -->
-<!--   prep_ = plot_prep -->
-<!-- ) -->
-<!-- ``` -->
+### Political ideology
 
+```{r}
+cols_ <- "Q34"
+plot_prep <- do.call(
+  what = cdrs::cdrs_plt_prep,
+  args = c(
+    list(
+    data_ = fabricated_data$data,
+    cols_ = cols_,
+    dict_ = fabricated_data$dict
+    ),
+    pie_params
+  )
+)
+
+cdrs_plt_pie(
+  prep_ = plot_prep
+)
+```
+
+## Section I: Sense of Place
+
+Work in progress.
+
+### 1a. Place Attachment
+
+```{r}
+thematic_ <- readr::read_csv(
+  system.file("extdata", "thematic_barplots.csv",
+            package = "cdrs")
+)
+
+thematic_ %>%
+  tidyr::fill(title, .direction = "down")
+```
