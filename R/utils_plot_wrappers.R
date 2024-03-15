@@ -108,7 +108,8 @@ plt_labels <- function(
   # read labels table from extdata
   labs <- readxl::read_xlsx(path = file_,
                             sheet = "labels",
-                            col_types = "text"
+                            col_types = "text",
+                            na = c("", "NA")
   ) %>%
     purrr::map_dfc(., txt_to_straight_quotes)
 
@@ -190,7 +191,8 @@ plt_logic <- function(
 
   logic_ <- readxl::read_xlsx(path = file_,
                               sheet = "logic",
-                              col_types = "text")
+                              col_types = "text",
+                              na = c("", "NA"))
 
   # If cols_ specified
   if(inherits(cols_, "character")){
