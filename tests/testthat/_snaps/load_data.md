@@ -28,19 +28,19 @@
       #   Q6_8 <fct>, Q6_9 <fct>, Q7_0 <fct>, Q7_1 <fct>, Q7_2 <fct>, Q7_3 <fct>, ...
       
       $dict
-      # A tibble: 1,307 x 6
+      # A tibble: 1,442 x 6
          Variable            name             value         encoding frequency percent
          <chr>               <chr>            <chr>         <chr>    <chr>     <chr>  
-       1 DRS_ID              Notes            The ID numbe~ <NA>     <NA>      <NA>   
-       2 DRS_ID              R Class          factor        <NA>     <NA>      <NA>   
-       3 DRS_ID              Total (n)        2208          <NA>     <NA>      <NA>   
-       4 DRS_ID              System (missing) 0             <NA>     <NA>      <NA>   
-       5 DRS_ID              Valid Responses  2208          <NA>     <NA>      <NA>   
-       6 DRS_ID              Unique Values    2208          <NA>     <NA>      <NA>   
-       7 DRS_ID              Example Factor   DRS1450       <NA>     <NA>      <NA>   
-       8 DistributionChannel Label            Distribution~ <NA>     <NA>      <NA>   
-       9 DistributionChannel Notes            This column ~ <NA>     <NA>      <NA>   
-      10 DistributionChannel R Class          factor        <NA>     <NA>      <NA>   
-      # i 1,297 more rows
+       1 DRS_ID              R Class          "factor"      <NA>     <NA>      <NA>   
+       2 DRS_ID              Total (n)        "200"         <NA>     <NA>      <NA>   
+       3 DRS_ID              System (missing) "0"           <NA>     <NA>      <NA>   
+       4 DRS_ID              Valid Responses  "200"         <NA>     <NA>      <NA>   
+       5 DRS_ID              Unique Values    "200"         <NA>     <NA>      <NA>   
+       6 DRS_ID              Notes            "The ID numb~ <NA>     <NA>      <NA>   
+       7 DRS_ID              Example Factor   "DRS1450"     <NA>     <NA>      <NA>   
+       8 DistributionChannel R Class          "factor"      <NA>     <NA>      <NA>   
+       9 DistributionChannel Total (n)        "200"         <NA>     <NA>      <NA>   
+      10 DistributionChannel System (missing) "0"           <NA>     <NA>      <NA>   
+      # i 1,432 more rows
       
 

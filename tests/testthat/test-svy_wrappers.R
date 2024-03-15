@@ -1,4 +1,4 @@
-test_that("svydesign. w/ fpc works with example",{
+test_that("cdrs_design. w/ fpc works with example",{
   demo <- cdrs_read_example(return_dict = F)
   demo <- cdrs_subset(data_ = demo,
                       cols_ = "Q3_5")
@@ -13,11 +13,23 @@ test_that("svydesign. w/ fpc works with example",{
   expect_snapshot(x = serialized)
 })
 
-test_that("crosstab. w/ works with example",{
+test_that("cdrs_crosstab. w/ works with example",{
   demo <- cdrs_read_example(return_dict = F)
   expect_snapshot(x = cdrs_crosstab(
     data_ = demo,
     cols_ = c("SEX_P", "Q3_5"),
     set_fpc = T
   ))
+})
+
+test_that("cdrs_props, return_stat = F, Q2",{
+  demo <- cdrs_read_example(return_dict = F)
+  obj <- cdrs_props(
+    data_ = demo,
+    col_ = "Q2",
+    return_stat = FALSE
+  )
+  expect_snapshot(
+    x = obj
+  )
 })
