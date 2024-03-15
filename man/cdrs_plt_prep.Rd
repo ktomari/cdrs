@@ -8,12 +8,12 @@ cdrs_plt_prep(
   data_,
   cols_,
   dict_ = NULL,
-  drop_missingness = FALSE,
   remove_angle_brackets = TRUE,
   is_weighted = TRUE,
   txt_options = NULL,
   sort_ = TRUE,
   title_size = 14,
+  custom_txt = list(labels = NULL, title = NULL, subtitle = NULL, caption = NULL),
   param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
 }
@@ -24,8 +24,6 @@ cdrs_plt_prep(
 
 \item{dict_}{the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
 
-\item{drop_missingness}{logical. Determines whether to convert \if{html}{\out{<missingness>}} values to \code{NA}.}
-
 \item{remove_angle_brackets}{logical. Determines whether to erase angle brackets from \if{html}{\out{<missingness>}} values.}
 
 \item{is_weighted}{logical.}
@@ -35,6 +33,8 @@ cdrs_plt_prep(
 \item{sort_}{logical. Sort variables/levels by magnitude of the mean.}
 
 \item{title_size}{numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.}
+
+\item{custom_txt}{list. A list containing any of the following elements: labels, title, subtitle, caption.}
 
 \item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
 }
