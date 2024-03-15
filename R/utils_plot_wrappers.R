@@ -112,7 +112,7 @@ plt_labels <- function(
   ) %>%
     purrr::map_dfc(., txt_to_straight_quotes)
 
-  if(!is.null(dict_)){
+  if(!inherits(dict_, "NULL")){
     # return
     # Before returning `labs`,
     # we will see if there are "factors" listed in the `dict_`
@@ -137,7 +137,6 @@ plt_labels <- function(
             return(tb)
           }
 
-          # browser()
           # get factors from dictionary.
           fcts_ <- dict_ %>%
             dplyr::filter(Variable == var &
