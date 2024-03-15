@@ -215,7 +215,7 @@ cdrs_props <- function(
         ) %>%
         # remove the col_ name, eg. "Q1_1",
         # from the factor levels, eg. "No" and "Yes"
-        mutate(levels:= stringr::str_remove(
+        mutate(levels = stringr::str_remove(
           string = levels, pattern = col_) %>%
             # convert to a factor
             forcats::as_factor()
