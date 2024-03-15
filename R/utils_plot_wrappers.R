@@ -278,7 +278,9 @@ plt_decorate <- function(
       },
       caption = {
         if("caption" %in% items_){
-          if(prep_$type %in% c("ordinal", "categorical")){
+          if(prep_$type %in% c("dichotomous",
+                               "ordinal",
+                               "categorical")){
             stringr::str_wrap(
               prep_$caption,
               width = floor((max_char/.7) * .5)
