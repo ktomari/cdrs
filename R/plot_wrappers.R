@@ -306,6 +306,7 @@ cdrs_plt_txt <- function(
              "",
              paste0(c(" ",
                missingness_txt))),
+      " ",
       supplemental_caption
     ) %>%
       stringr::str_squish()
@@ -449,11 +450,11 @@ cdrs_plt_prep <- function(
   # tibble columns:
   # variable, levels, mean, SE, percent, percent_lab
   if(is_weighted){
-    prep_ <- purrr::map_dfr(cols_,
+    props_ <- purrr::map_dfr(cols_,
                              ~cdrs_props(data_ = data_,
                                          col_ = .x))
   } else {
-    prep_ <- purrr::map_dfr(cols_,
+    props_ <- purrr::map_dfr(cols_,
                              ~get_unwt_props(
                                data_ = data_,
                                col_ = .x
@@ -462,7 +463,7 @@ cdrs_plt_prep <- function(
 
   # For stacked plots, small values of label overlap
   if(out$type == "ordinal"){
-    prep_ <- prep_ %>%
+    props_ <- props_ %>%
       dplyr::mutate(percent_lab = dplyr::case_when(
         percent < 10 ~ NA_character_,
         .default = percent_lab
@@ -483,7 +484,7 @@ cdrs_plt_prep <- function(
     stopifnot(length(level_) == 1)
 
     # filter affirmative level only
-    prep_ <- prep_ %>%
+    props_ <- props_ %>%
       dplyr::filter(levels %in% level_) %>%
       dplyr::mutate(levels = forcats::fct_drop(levels))
 
@@ -505,7 +506,7 @@ cdrs_plt_prep <- function(
   if(sort_){
     if(out$type %in% c("dichotomous", "ordinal")){
 
-      prep_ <- prep_ %>%
+      props_ <- props_ %>%
         tidyr::nest(.by = variable,
                     .key = "nested") %>%
         dplyr::mutate(max_val = purrr::map_vec(nested, function(tb){
@@ -522,7 +523,7 @@ cdrs_plt_prep <- function(
         dplyr::mutate(variable = forcats::as_factor(variable))
 
     } else if(out$type %in% c("categorical")) {
-      prep_ <- prep_ %>%
+      props_ <- props_ %>%
         dplyr::arrange(mean) %>%
         dplyr::mutate(levels = forcats::as_factor(as.character(levels)))
     }
@@ -563,14 +564,14 @@ cdrs_plt_prep <- function(
       if("alphabet" %in% names(txt_$labels)){
 
         if(out$type %in% c("dichotomous")){
-          prep_ <- prep_ %>%
+          props_ <- props_ %>%
             dplyr::left_join(y = txt_$labels %>%
                                dplyr::select(Variable, alphabet),
                              by = c("variable" = "Variable")) %>%
             dplyr::rename(var_id = alphabet) %>%
             dplyr::mutate(var_id = forcats::as_factor(var_id))
         } else if(out$type %in% c("categorical")) {
-          prep_ <- prep_ %>%
+          props_ <- props_ %>%
             dplyr::left_join(y = txt_$labels %>%
                                dplyr::select(level, alphabet),
                              by = c("levels" = "level")) %>%
@@ -596,7 +597,7 @@ cdrs_plt_prep <- function(
         }
 
         # now create var_id
-        prep_ <- prep_ %>%
+        props_ <- props_ %>%
           dplyr::left_join(y = txt_$labels %>%
                       dplyr::select(Variable, short_label),
                     by = c("variable" = "Variable")) %>%
@@ -621,7 +622,7 @@ cdrs_plt_prep <- function(
           )
         }
 
-        prep_ <- prep_ %>%
+        props_ <- props_ %>%
           dplyr::left_join(y = txt_$labels %>%
                              dplyr::select(level, short_level),
                     by = c("levels" = "level")) %>%
@@ -633,13 +634,13 @@ cdrs_plt_prep <- function(
       # we want to wrap long text.
 
       if(out$type %in% c("categorical")){
-        prep_ <- prep_ %>%
+        props_ <- props_ %>%
           mutate(levels = stringr::str_wrap(levels,
                                            width = axis_wrap) %>%
                    forcats::as_factor())
       }
       # else if(out$type %in% c("dichotomous")){
-      #   prep_ <- prep_ %>%
+      #   props_ <- props_ %>%
       #     mutate(variable = stringr::str_wrap(variable,
       #                                         width = axis_wrap) %>%
       #              forcats::as_factor())
@@ -649,17 +650,17 @@ cdrs_plt_prep <- function(
     }
 
     if(out$type %in% c("ordinal")){
-      prep_ <- prep_ %>%
+      props_ <- props_ %>%
         dplyr::mutate(percent_lab = forcats::as_factor(
           as.character(percent_lab)))
     }
 
     out <- append(out, txt_)
     out <- append(out, list(
-      prep = prep_
+      props = props_
       ))
   } else {
-    out <- append(out, list(prep = prep_))
+    out <- append(out, list(props = props_))
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -676,20 +677,20 @@ cdrs_plt_pie <- function(
     prep_
 ){
   # What number of factors do we have?
-  n_fct <- nrow(prep_$prep)
+  n_fct <- nrow(prep_$props)
 
   # Create a palette
   pal <- qual_pal(n_fct)
 
   # Determine level id column
-  if("lvl_id" %in% names(prep_$prep)){
+  if("lvl_id" %in% names(prep_$props)){
     fill_ <- "lvl_id"
   } else {
     fill_ <- "levels"
   }
 
   plt_ <- ggplot2::ggplot(
-    data = prep_$prep,
+    data = prep_$props,
     mapping =
       ggplot2::aes(
         x = "",
@@ -749,7 +750,7 @@ cdrs_plt_bar <- function(
     prep_
 ){
   stopifnot(inherits(prep_, "list"))
-  stopifnot(c("type", "prep") %in% names(prep_))
+  stopifnot(c("type", "props") %in% names(prep_))
   if(prep_$type != "dichotomous"){
     warning(
       stringr::str_glue(
@@ -758,14 +759,14 @@ cdrs_plt_bar <- function(
     )
   }
 
-  if("var_id" %in% names(prep_$prep)){
+  if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
     y_ <- "variable"
   }
 
   plt_ <- ggplot2::ggplot(
-    data = prep_$prep,
+    data = prep_$props,
     mapping = ggplot2::aes(
       x = percent,
       y = !!rlang::sym(y_)
@@ -806,7 +807,7 @@ cdrs_plt_stacked <- function(
 
 
 
-  if("var_id" %in% names(prep_$prep)){
+  if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
     y_ <- "variable"
@@ -817,13 +818,13 @@ cdrs_plt_stacked <- function(
   # is actually quite difficult. This function determine where
   # along the line between 1:100 or in our case 0:1 where a label
   # should exist.)
-  prep_$prep <- prep_$prep %>%
+  prep_$props <- prep_$props %>%
     dplyr::group_by(!!rlang::sym(y_)) %>%
     mutate(pos = cumpos(mean)/100)
 
   # Create plot.
   plt_ <- ggplot2::ggplot(
-    data = prep_$prep,
+    data = prep_$props,
     mapping = ggplot2::aes(
       x = mean,
       y = !!rlang::sym(y_),
