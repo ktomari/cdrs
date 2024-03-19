@@ -28,9 +28,11 @@ Imports:
     tidyselect,
     utils
 Suggests: 
+    colorspace,
     ggplot2,
     knitr,
     rcartocolor,
+    RColorBrewer,
     rmarkdown,
     testthat (>= 3.0.0),
     withr
