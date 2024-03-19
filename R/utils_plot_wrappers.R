@@ -174,7 +174,9 @@ plt_labels <- function(
   }
 }
 
-#' Table with logic for handling CDRS data.
+#' Table with plotting logic for handling CDRS data.
+#'
+#' This function simply loads some parameters regarding the plot types associated with each set of questions.
 #'
 #' @param file_ path to file.
 #' @param cols_ character. Columns to subset.
@@ -211,6 +213,29 @@ plt_logic <- function(
 
   # return
   logic_
+}
+
+#' Load palette options.
+#'
+#' @param file_ path to file.
+#' @noRd
+plt_pal_guide <- function(
+    file_ = system.file("extdata",
+                        "plot_parameters.xlsx",
+                        package = "cdrs")
+){
+  # Parameter Validation
+  stopifnot(inherits(file_, "character"))
+  # stopifnot(inherits(cols_, "character") | inherits(cols_, "NULL"))
+
+  pal_guide <- readxl::read_xlsx(path = file_,
+                              sheet = "palettes",
+                              col_types = "text",
+                              na = c("", "NA"))
+
+  # return
+  pal_guide %>%
+    mutate(pal_start = as.numeric(pal_start))
 }
 
 #' Calculate plot wrap ratio
@@ -425,3 +450,338 @@ cumpos <- function(x){
   # return vector
   100 - tmp
 }
+
+#' A function that executes a palette function.
+#'
+#' This function largely serves as a wraparound for different color palette functions. This function executes a provided palette function (with its appropriate namespace, eg. grDevices) that is in string form. This assumes the palette function has the inputs `n` and `palette` which is true for most palette functions in both base and external packages.
+#'
+#' @param fun_ string with 'namespace::function'.
+#' @param n_ string or integer with number of colors.
+#' @param pal_ string with palette name.
+#' @param options_ string or `NULL`. If a string, it simply pastes values into function call. The string should take the form: `type = 'qualitative'`
+#' @return character vector of hex color codes.
+#' @noRd
+pal_execute <- function(
+    fun_ = "grDevices::palette.colors",
+    n_ = NA,
+    pal_ = "Okabe-Ito",
+    options_ = NA
+){
+
+  # derive namespace
+  namespace_ <- sub(
+    pattern = "\\:{2}.+",
+    replacement = "",
+    x = fun_,
+    perl = TRUE
+  )
+
+  # validation
+  stopifnot(rlang::is_installed(namespace_))
+
+  if(is.na(n_)){
+    n_ <- 8
+  }
+
+  func <- paste0(
+    fun_,
+    "(n = ",
+    n_,
+    ", palette = \'",
+    pal_,
+    "\'"
+  )
+
+  # add options
+  if(!is.na(options_)){
+    func <- paste0(func, ", ", options_)
+  }
+
+  # close fun call
+  func <- paste0(func, ")")
+
+  # Execute the function call
+  hex <- tryCatch(
+    eval(str2lang(func)),
+    error = function(e){
+      NA
+    },
+    warning = function(e){
+      NA
+    })
+
+  if(is.na(hex[1]) & n_ >= 5){
+    # Recursively call this function with less values.
+    # We assume here that no palette is < 5.
+    hex <- pal_execute(
+      fun_ = fun_,
+      n_ = (n_ - 1),
+      pal_ = pal_,
+      options_ = options_
+    )
+  }
+
+  # return
+  hex
+}
+
+
+#' Organize inputs for `pal_execute`
+#'
+#' A simple manager for the logic needed around the rather simple `pal_execute` function. This function is designed to execute the `guide_` correctly; if not then resolve issues; and if not that, raise an error.
+#'
+#' @param factors_ is a character or factor vector of the values (ie. DRS qid levels) that need to mapped onto hex colors.
+#' @param guide_ is a data.frame or tibble derived from plot_parameters.xlsx > palettes.
+#' @return a tibble with two columns: factors, pal.
+#' @noRd
+pal_mapper <- function(
+    factors_,
+    guide_
+){
+  # validation
+  stopifnot(inherits(factors_, "factor") |
+              inherits(factors_, "character"))
+  stopifnot(inherits(guide_, "data.frame"))
+  stopifnot(nrow(guide_) == 1)
+
+  # retrieve starting iteration (for subsetting `hex`)
+  start_i <- ifelse(
+    test = is.na(guide_$pal_start),
+    yes = 1,
+    no = as.integer(guide_$pal_start)
+  )
+
+  # sometimes we want to expand the range of colors
+  # retrieved from the palette function, eg.
+  # a sequential gradient becomes too light
+  pal_diff <- ifelse(
+    test = is.na(guide_$pal_diff),
+    yes = 0,
+    no = as.integer(guide_$pal_diff)
+  )
+
+  # determine appropriate numbers of colors to return
+  # combine factor length and starting iter
+  size_ <- length(factors_) + start_i + pal_diff - 1
+
+  hex <- pal_execute(
+    fun_ = guide_$pal_fun,
+    n_ = size_,
+    pal_ = guide_$pal_name,
+    options_ = guide_$pal_options
+  )
+
+  # `pal_execute` is designed to recursively call itself
+  # until `n_ < 5`. Therefore, check length of `hex`
+
+  # Possibility that hex is NA
+  if(is.na(hex[1])){
+    stop("An error occurred in pal_mapper(). pal_execute() returned NA.")
+  }
+
+  if(length(hex) > length(factors_) &
+     !is.na(start_i)){
+    # here hex is longer, so we need to sort and subset.
+    # but first, lets make sure start_i within hex's range.
+    if(start_i > length(hex)){
+      # this would cause an issue normally, but since we can
+      # still return something, we just return the original hex
+      # starting from the beginning of hex.
+      return(
+        tibble::tibble(
+          factors = factors_,
+          pal = hex[1:length(factors_)]
+        )
+      )
+    }
+    # sort hex
+    h1 <- hex[start_i:length(hex)]
+    h2 <- hex[1:(start_i - 1)]
+    hex <- c(h1,h2)
+    hex <- hex[1:length(factors_)]
+    # return
+    return(
+      tibble::tibble(
+        factors = factors_,
+        pal = hex
+      )
+    )
+  } else if (length(hex) < length(factors_)){
+    stop(
+      stringr::str_glue(
+        "Selected palette '{guide_$pal_fun}' is too small."
+        )
+      )
+  } else if(length(hex) == length(factors_)){
+    # return
+    return(
+      tibble::tibble(
+        factors = factors_,
+        pal = hex
+      )
+    )
+  } else {
+    stop("An error occurred in pal_mapper().")
+  }
+}
+
+#' Create a color palette.
+#'
+#' This function largely serves as a wraparound for different color palette functions. However,
+#'
+#' @param prep_ list from `cdrs_plt_prep`
+#' @param reverse_ logical. direction of palette
+#' @param randomize_ logical. randomize palette order
+#' @return list `prep_` with only element `props` changed.
+#' @noRd
+pal_main <- function(
+    prep_,
+    missingness_pal = TRUE,
+    reverse_ = FALSE,
+    randomize_ = FALSE
+){
+  # validation
+  stopifnot(inherits(prep_, "list"))
+
+  stopifnot(all(
+    c(
+      "props",
+      "logic",
+      "type"
+    ) %in%
+      names(prep_)
+  )
+  )
+
+  # get pal_id if there is one.
+  pal_id_ <- prep_$logic$pal_id %>%
+    unique()
+
+  # get palette guide
+  palg <- plt_pal_guide()
+
+  # subset palette guide
+  if(is.na(pal_id_)){
+    guide_main <- palg %>%
+      dplyr::filter(plot_type == prep_$type &
+                      is.na(pal_id))
+  } else {
+    guide_main <- palg %>%
+      dplyr::filter(plot_type == prep_$type &
+                      pal_id == pal_id_)
+  }
+
+  # Are we assigning colors based on `variable` or `levels`?
+  # Cases:
+  if(length(unique(prep_$props$levels)) == 1 &
+     length(unique(prep_$props$variable)) > 1){
+    # Case 1. Dichotomous, Multiple `variable`, eg Q1_0:5
+    # by variable
+    varying_col <- "variable"
+  } else if(length(unique(prep_$props$levels)) > 1 &
+            length(unique(prep_$props$variable)) > 1){
+    # Case 2. Stacked, Multiple `variable`, eg. Q19a:b
+    varying_col <- "levels"
+  } else {
+    # Case 3. Stacked, Single `variable`, eg. Q10
+    # Case 4. Pie, eg. Q2
+    varying_col <- "levels"
+  }
+
+  # retrieve factors (either `variable` or `levels`)
+  fcts_ <- prep_$props %>%
+    dplyr::select(tidyselect::all_of(varying_col),
+                  encoding) %>%
+    dplyr::distinct()
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Get hex colors,
+  # depending on if we want missingness as a separate palette (or not).
+  if(missingness_pal &
+     (T %in% (as.integer(fcts_$encoding) < 0))
+     ){
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Missingness & Rest of Levels Separate
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Missingness levels
+    # subset palette guide
+    if(is.na(pal_id_)){
+      guide_miss <- palg %>%
+        dplyr::filter(plot_type == "missingness" &
+                        is.na(pal_id))
+    } else {
+      guide_miss <- palg %>%
+        dplyr::filter(plot_type == "missingness" &
+                        pal_id == pal_id_)
+
+      if(nrow(guide_miss) == 0){
+        guide_miss <- palg %>%
+          dplyr::filter(plot_type == "missingness" &
+                          is.na(pal_id))
+      }
+    }
+
+    fcts_miss <- fcts_ %>%
+      dplyr::filter(as.integer(encoding) < 0) %>%
+      dplyr::pull(levels)
+
+    pal_miss <- pal_mapper(
+      factors_ = fcts_miss,
+      guide_ = guide_miss
+    )
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Normal levels
+    fcts_main <- fcts_ %>%
+      dplyr::filter(as.integer(encoding) >= 0) %>%
+      dplyr::pull(levels)
+
+    pal_main <- pal_mapper(
+      factors_ = fcts_main,
+      guide_ = guide_main
+    )
+
+    if(reverse_){
+      pal_main$pal <- rev(pal_main$pal)
+    } else if (randomize_){
+      pal_main$pal <- sample(pal_main$pal)
+    }
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Combine Normal and Missingness Levels
+    pal_ <- pal_main %>%
+      dplyr::bind_rows(pal_miss)
+
+  } else {
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Ignore missingness values,
+    # and get hex colors for every unique value.
+    pal_ <- pal_mapper(
+      factors_ = fcts_[[varying_col]],
+      guide_ = guide_main
+    )
+
+    if(reverse_){
+      pal_$pal <- rev(pal_$pal)
+    } else if (randomize_){
+      pal_$pal <- sample(pal_$pal)
+    }
+  }
+
+  # rename 'factors' column to whatever varying_col is set to.
+  names(pal_)[1] <- varying_col
+
+
+  # Merge props and pal
+  prep_$props <- prep_$props %>%
+    dplyr::left_join(
+      y = pal_,
+      by = varying_col
+    )
+
+  # return
+  prep_
+}
+
+
