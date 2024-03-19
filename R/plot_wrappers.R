@@ -417,6 +417,8 @@ cdrs_plt_prep <- function(
     cols_ = cols_
   )
 
+  out$logic <- logic_
+
   # set plot type
   out$type <- logic_$plot_type1 %>%
     unique()
@@ -427,7 +429,7 @@ cdrs_plt_prep <- function(
   # what is sorted is not the levels, but the variables themselves.
   # And where there is only one variable that is "categorical",
   # the levels do get sorted.)
-  if(out$type == "ordinal" &
+  if(out$type %in% c("ordinal", "diverging") &
      length(unique(logic_$Variable)) == 1){
     sort_ <- FALSE
   }
@@ -461,10 +463,20 @@ cdrs_plt_prep <- function(
                              ))
   }
 
+  # add encoding column into props (used in pal_maker)
+  props_ <- props_ %>%
+    dplyr::left_join(
+      # subset the dict before joining.
+      y = dict_ %>%
+        dplyr::filter(name == "factors") %>%
+        dplyr::select(Variable, value, encoding),
+      by = c("variable" = "Variable", "levels" = "value"))
+
   # For stacked plots, small values of label overlap
-  if(out$type == "ordinal"){
+  if(out$type %in% c("ordinal", "diverging")){
     props_ <- props_ %>%
       dplyr::mutate(percent_lab = dplyr::case_when(
+        # drop labels <10%
         percent < 10 ~ NA_character_,
         .default = percent_lab
       ))
@@ -504,19 +516,23 @@ cdrs_plt_prep <- function(
   # Sort ----
   # Do we want to arrange levels/variables by size?
   if(sort_){
-    if(out$type %in% c("dichotomous", "ordinal")){
+    if(out$type %in% c("dichotomous",
+                       "ordinal",
+                       "diverging")){
 
       props_ <- props_ %>%
         tidyr::nest(.by = variable,
                     .key = "nested") %>%
-        dplyr::mutate(max_val = purrr::map_vec(nested, function(tb){
-          levels_ <- levels(tb$levels)
+        dplyr::mutate(max_val = purrr::map_vec(
+          nested,
+          function(tb){
+            levels_ <- levels(tb$levels)
 
-          lvl_ <- levels_[1]
-          # return
-          tb$mean[tb$levels==lvl_]
+            lvl_ <- levels_[1]
+            # return
+            tb$mean[tb$levels==lvl_]
 
-        })) %>%
+          })) %>%
         dplyr::arrange(max_val) %>%
         dplyr::select(-max_val) %>%
         tidyr::unnest("nested") %>%
@@ -525,7 +541,11 @@ cdrs_plt_prep <- function(
     } else if(out$type %in% c("categorical")) {
       props_ <- props_ %>%
         dplyr::arrange(mean) %>%
-        dplyr::mutate(levels = forcats::as_factor(as.character(levels)))
+        dplyr::mutate(levels = forcats::as_factor(
+          as.character(
+            levels)
+        )
+        )
     }
   }
 
@@ -649,7 +669,21 @@ cdrs_plt_prep <- function(
 
     }
 
-    if(out$type %in% c("ordinal")){
+    props_$variable <- forcats::as_factor(props_$variable)
+
+    # final cleanup
+    if(out$type %in% c("diverging")){
+      # flip levels around
+      props_ <- props_ %>%
+        dplyr::group_by(variable) %>%
+        dplyr::mutate(levels = forcats::fct_rev(levels)) %>%
+        dplyr::mutate(percent_lab = forcats::as_factor(percent_lab)) %>%
+        dplyr::mutate(var_id = forcats::as_factor(var_id)) %>%
+        dplyr::arrange(variable, levels) %>%
+        dplyr::ungroup()
+    }
+
+    if(out$type %in% c("ordinal", "diverging")){
       props_ <- props_ %>%
         dplyr::mutate(percent_lab = forcats::as_factor(
           as.character(percent_lab)))
@@ -676,11 +710,13 @@ cdrs_plt_prep <- function(
 cdrs_plt_pie <- function(
     prep_
 ){
-  # What number of factors do we have?
-  n_fct <- nrow(prep_$props)
 
-  # Create a palette
-  pal <- qual_pal(n_fct)
+  prep_ <- pal_main(
+    prep_ = prep_
+  )
+
+  # extract palette
+  plt_pal <- prep_$props$pal %>% unique()
 
   # Determine level id column
   if("lvl_id" %in% names(prep_$props)){
@@ -714,7 +750,7 @@ cdrs_plt_pie <- function(
       na.rm = T
       ) +
     # add colors
-    ggplot2::scale_fill_manual(values = magrittr::set_names(pal, NULL)) +
+    ggplot2::scale_fill_manual(values = plt_pal) +
     # text layered over pie
     ggplot2::coord_polar(theta = "y")
     # ggplot2::scale_y_continuous(breaks = props_$pos,
@@ -759,6 +795,16 @@ cdrs_plt_bar <- function(
     )
   }
 
+  prep_ <- pal_main(
+    prep_ = prep_
+  )
+
+  # extract palette
+  plt_pal <- prep_$props$pal %>%
+    unique() %>%
+    # usually we want the color gradient to flip.
+    rev()
+
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
@@ -769,10 +815,14 @@ cdrs_plt_bar <- function(
     data = prep_$props,
     mapping = ggplot2::aes(
       x = percent,
-      y = !!rlang::sym(y_)
+      y = !!rlang::sym(y_),
+      fill = variable
     )) +
     ggplot2::geom_bar(
       stat = "identity"
+    ) +
+    ggplot2::scale_fill_manual(
+      values = rep(plt_pal, nrow(prep_$props))
     ) +
     # Scale
     ggplot2::scale_x_continuous(
@@ -805,13 +855,18 @@ cdrs_plt_stacked <- function(
     prep_
 ){
 
-
-
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
     y_ <- "variable"
   }
+
+  prep_ <- pal_main(
+    prep_ = prep_
+  )
+
+  # extract palette
+  plt_pal <- prep_$props$pal %>% unique()
 
   # Set up data for geom_label()
   # (Note, the problem is placing the label correctly
@@ -834,17 +889,14 @@ cdrs_plt_stacked <- function(
     ggplot2::geom_col(
       position = ggplot2::position_stack()
     ) +
-    {
-      if(prep_$type == "ordinal"){
-        ggplot2::scale_fill_brewer(type = "div")
-      } else {
-        ggplot2::scale_fill_brewer(type = "qual")
-      }
-    } +
+    ggplot2::scale_fill_manual(
+      values = plt_pal,
+      guide = ggplot2::guide_legend(reverse = TRUE)
+      ) +
     ggplot2::scale_x_continuous(
       breaks = c(0, 0.25, 0.5, 0.75, 1),
       labels = c("0", "25%", "50%", "75%", "100%"),
-      expand = c(.05, .05)
+      expand = c(0, 0)
     ) +
     ggplot2::scale_y_discrete(expand = c(0, 0)) +
     ggplot2::geom_label(
@@ -870,7 +922,30 @@ cdrs_plt_stacked <- function(
   plt_ <- plt_decorate(plt_ = plt_,
                        prep_ = prep_) +
     ggplot2::theme(
-      legend.title = ggplot2::element_blank()
+      legend.title = ggplot2::element_blank(),
+      legend.position = "bottom",
+      legend.margin = ggplot2::margin(
+        t = 0,
+        r = 0,
+        b = 1,
+        l = 0,
+        unit = "lines"
+      ),
+      # Adjusting bottom margin
+      # legend.spacing.y = grid::unit(2, "lines"),
+      axis.ticks.y = ggplot2::element_blank(),
+      panel.grid.minor.x = ggplot2::element_blank(),
+      panel.grid.major.y = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(
+        colour = "#333333",
+        linewidth = 1,
+        fill = NA
+      ),
+      plot.margin = grid::unit(c(1,  # t
+                                 1,  # r
+                                 1,  # b
+                                 1), # l
+                               'lines')
     )
 
   # return
