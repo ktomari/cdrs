@@ -9,5 +9,6 @@ data-raw/*.zip
 data-raw/UNSHAREABLE*
 data-raw/*.afdesign
 inst/doc
-data-raw/scratch.R
+data-raw/scratch*
 data-raw/DRS*
+inst/extdata/~*
