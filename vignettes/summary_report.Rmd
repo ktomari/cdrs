@@ -237,180 +237,180 @@ cdrs_plt_pie(
 
 Work in progress.
 
-<!-- ### 1a. Place Attachment -->
+### 1a. Place Attachment
 
-<!-- ```{r} -->
-<!-- # First we need to load this simple spreadsheet laying out -->
-<!-- # the graphs we need to make.  -->
-<!-- # We only NEED to do this in order to derive `cols_`. -->
-<!-- path_thematic <- system.file("extdata", "plot_thematic.xlsx",  -->
-<!--                              package = "cdrs") -->
+```{r}
+# First we need to load this simple spreadsheet laying out
+# the graphs we need to make.
+# We only NEED to do this in order to derive `cols_`.
+path_thematic <- system.file("extdata", "plot_thematic.xlsx",
+                             package = "cdrs")
 
-<!-- thematic_labs <- cdrs:::plt_labels(file_ = path_thematic) -->
+thematic_labs <- cdrs:::plt_labels(file_ = path_thematic)
 
-<!-- cols_ <- thematic_labs$Variable[thematic_labs$short_title == "Place Attachment"] -->
+cols_ <- thematic_labs$Variable[thematic_labs$short_title == "Place Attachment"]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
-<!-- ### 1b. Place Identity & Meaning -->
+### 1b. Place Identity & Meaning
 
-<!-- ```{r} -->
-<!-- cols_ <- thematic_labs$Variable[ -->
-<!--   thematic_labs$short_title == "Place Identity & Meaning" -->
-<!--   ] -->
+```{r}
+cols_ <- thematic_labs$Variable[
+  thematic_labs$short_title == "Place Identity & Meaning"
+  ]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
-<!-- ### 1c. Place dependence -->
+### 1c. Place dependence
 
-<!-- ```{r} -->
-<!-- cols_ <- thematic_labs$Variable[ -->
-<!--   thematic_labs$short_title == "Place dependence" -->
-<!--   ] -->
+```{r}
+cols_ <- thematic_labs$Variable[
+  thematic_labs$short_title == "Place dependence"
+  ]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
-<!-- ### 4. Important features of Delta -->
+### 4. Important features of Delta
 
-<!-- (Note, this is just the same as doing all of Q4, except for the labels/title). -->
+(Note, this is just the same as doing all of Q4, except for the labels/title).
 
-<!-- ```{r} -->
-<!-- cols_ <- thematic_labs$Variable[ -->
-<!--   thematic_labs$short_title == "Important features of Delta" -->
-<!--   ] -->
+```{r}
+cols_ <- thematic_labs$Variable[
+  thematic_labs$short_title == "Important features of Delta"
+  ]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
 <!-- map -->
 
 ## Section II: Quality of Life in the Delta
 
-<!-- ### 6. Valued assets to Delta life -->
+### 6. Valued assets to Delta life
 
-<!-- ```{r} -->
-<!-- cols_ <- thematic_labs$Variable[ -->
-<!--   thematic_labs$short_title == "Valued assets to Delta life" -->
-<!--   ] -->
+```{r}
+cols_ <- thematic_labs$Variable[
+  thematic_labs$short_title == "Valued assets to Delta life"
+  ]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
-<!-- ### 7. Challenges to life in Delta -->
+### 7. Challenges to life in Delta
 
-<!-- ```{r} -->
-<!-- cols_ <- thematic_labs$Variable[ -->
-<!--   thematic_labs$short_title == "Challenges to life in Delta" -->
-<!--   ] -->
+```{r}
+cols_ <- thematic_labs$Variable[
+  thematic_labs$short_title == "Challenges to life in Delta"
+  ]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
 
 
-<!-- ### 8. Activities in the Delta  -->
+### 8. Activities in the Delta
 
-<!-- ```{r} -->
-<!-- cols_ <- thematic_labs$Variable[ -->
-<!--   thematic_labs$short_title == "Activities in the Delta" -->
-<!--   ] -->
+```{r}
+cols_ <- thematic_labs$Variable[
+  thematic_labs$short_title == "Activities in the Delta"
+  ]
 
-<!-- plt_prep <- cdrs_plt_prep( -->
-<!--   data_ = fabricated_data$data, -->
-<!--   cols_ = cols_, -->
-<!--   dict_ = fabricated_data$dict, -->
-<!--   txt_options = list( -->
-<!--     label_form = "short", -->
-<!--     title_form = "short", -->
-<!--     subtitle_ = FALSE, -->
-<!--     caption_ = TRUE -->
-<!--   ), -->
-<!--   param_file = path_thematic -->
-<!-- ) -->
+plt_prep <- cdrs_plt_prep(
+  data_ = fabricated_data$data,
+  cols_ = cols_,
+  dict_ = fabricated_data$dict,
+  txt_options = list(
+    label_form = "short",
+    title_form = "short",
+    subtitle_ = FALSE,
+    caption_ = TRUE
+  ),
+  param_file = path_thematic
+)
 
-<!-- cdrs_plt_bar(plt_prep) -->
-<!-- ``` -->
+cdrs_plt_bar(plt_prep)
+```
 
 ## Section III: Risk and Resilience to Climate Change
 
