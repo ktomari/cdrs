@@ -155,8 +155,9 @@ geo_zones12 <- sf::st_read(dsn = "https://gis.data.cnra.ca.gov/api/download/v1/i
   dplyr::select(Zone) %>%
   dplyr::rename(Name = Zone)
 
+## Tertiary Zones ----
 geo_zones3sac <- sf::st_read(
-  "data-raw/Tertiaray1_SouthSacFlorin/2018_ssacf.gdb"
+  "data-raw/geographies/Tertiaray1_SouthSacFlorin/2018_ssacf.gdb"
   ) %>%
   st_transform(crs = 3310) %>%
   dplyr::select(Name) %>%
@@ -164,7 +165,7 @@ geo_zones3sac <- sf::st_read(
   rename(geometry = Shape)
 
 geo_zones3stk <- sf::st_read(
-  "data-raw/Tertiary2_SouthStockton/2019_stck.gdb"
+  "data-raw/geographies/Tertiary2_SouthStockton/2019_stck.gdb"
   )%>%
   st_transform(crs = 3310) %>%
   dplyr::select(Name) %>%
