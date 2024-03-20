@@ -25,6 +25,8 @@ This document is a work in progress. The purpose of this document is to replicat
 
 If you replace the data in this document with the public data set, you will still observe different results from the Summary Report 2023 for a few reasons: 1) The public data set is different: its lacking some of the variables used in report, such as a finer level of geographic detail; 2) Some errors in the code used to create the summary report have been amended. At the time of this writing, no major issues have been observed. What errors do appear will be added to the report's errata on the website.
 
+As a final note, some functions that are repeated throughout this document are not evaluated to save time in building this vignette, however the code in those chunks should work once `eval = TRUE`
+
 ## Data Setup
 
 ```{r}
@@ -88,7 +90,7 @@ pie_params <- list(
 
 ### Age
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "AGE_P"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -109,7 +111,7 @@ cdrs_plt_pie(
 
 ### Race
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "RACE_P"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -130,7 +132,7 @@ cdrs_plt_pie(
 
 ### Education
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "EDU_P"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -151,7 +153,7 @@ cdrs_plt_pie(
 
 ### Income
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "INCOME_P"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -172,7 +174,7 @@ cdrs_plt_pie(
 
 ### Home Ownership
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "HOMEOWNERSHIP_P"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -193,7 +195,7 @@ cdrs_plt_pie(
 
 ### Residential Designation
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "Q2"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -214,7 +216,7 @@ cdrs_plt_pie(
 
 ### Political ideology
 
-```{r}
+```{r eval = FALSE}
 cols_ <- "Q34"
 plot_prep <- do.call(
   what = cdrs::cdrs_plt_prep,
@@ -268,7 +270,7 @@ cdrs_plt_bar(plt_prep)
 
 ### 1b. Place Identity & Meaning
 
-```{r}
+```{r eval = FALSE}
 cols_ <- thematic_labs$Variable[
   thematic_labs$short_title == "Place Identity & Meaning"
   ]
@@ -291,7 +293,7 @@ cdrs_plt_bar(plt_prep)
 
 ### 1c. Place dependence
 
-```{r}
+```{r eval = FALSE}
 cols_ <- thematic_labs$Variable[
   thematic_labs$short_title == "Place dependence"
   ]
@@ -316,7 +318,7 @@ cdrs_plt_bar(plt_prep)
 
 (Note, this is just the same as doing all of Q4, except for the labels/title).
 
-```{r}
+```{r eval = FALSE}
 cols_ <- thematic_labs$Variable[
   thematic_labs$short_title == "Important features of Delta"
   ]
@@ -343,7 +345,7 @@ cdrs_plt_bar(plt_prep)
 
 ### 6. Valued assets to Delta life
 
-```{r}
+```{r eval = FALSE}
 cols_ <- thematic_labs$Variable[
   thematic_labs$short_title == "Valued assets to Delta life"
   ]
@@ -366,7 +368,7 @@ cdrs_plt_bar(plt_prep)
 
 ### 7. Challenges to life in Delta
 
-```{r}
+```{r eval = FALSE}
 cols_ <- thematic_labs$Variable[
   thematic_labs$short_title == "Challenges to life in Delta"
   ]
@@ -391,7 +393,7 @@ cdrs_plt_bar(plt_prep)
 
 ### 8. Activities in the Delta
 
-```{r}
+```{r eval = FALSE}
 cols_ <- thematic_labs$Variable[
   thematic_labs$short_title == "Activities in the Delta"
   ]
@@ -416,7 +418,7 @@ cdrs_plt_bar(plt_prep)
 
 ### 12. Environmental Impacts
 
-```{r}
+```{r eval = FALSE}
 plt_prep <- cdrs_plt_prep(
   data_ = fabricated_data$data,
   cols_ = paste0("Q12_", 0:7),
