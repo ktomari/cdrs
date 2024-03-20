@@ -1,4 +1,7 @@
-# Used for drs_read
+
+# necessary_files ----
+# These are the core types of files for reading DRS data.
+# Used for cdrs_read().
 necessary_files <- data.frame(
   name = c("dd", "data", "hash"),
   style = c(
@@ -13,6 +16,7 @@ necessary_files <- data.frame(
   )
 )
 
+# fpc ----
 # Used (potentially) for fpc
 # These values provided in MSG report on Weights.
 zone_N <- data.frame(
@@ -20,7 +24,7 @@ zone_N <- data.frame(
   N = c(11727, 540340, 166085)
 )
 
-# Composite Index Frame
+# Composite Index Frame ----
 # used in load_data > cdrs_composite_index
 composite_frame <- data.frame(
   title = c(
@@ -128,5 +132,73 @@ dict_errata <- tibble::tibble(
   percent = NA
 )
 
+# Geographies ----
+library(tigris)
+library(tidyverse)
+library(sf)
+
+## Legal Delta Boundary ----
+# source:
+# https://data.ca.gov/dataset/i03-legaldeltaboundary
+# https://gis.data.cnra.ca.gov/api/download/v1/items/57b02f8a5e77465f902376dbd9522585/geojson?layers=0
+geo_boundary <- sf::st_read(dsn = "https://gis.data.cnra.ca.gov/api/download/v1/items/57b02f8a5e77465f902376dbd9522585/geojson?layers=0") %>%
+  st_transform(crs = 3310) %>%
+  dplyr::mutate(Name = "Legal Delta Boundary") %>%
+  dplyr::select(Name)
+
+
+## Primary and Secondary Delta Zones ----
+# https://data.ca.gov/dataset/i03-delta-primarysecondary-zones
+# https://gis.data.cnra.ca.gov/api/download/v1/items/b70c43e5f737497eaa3319d0eff94733/geojson?layers=0
+geo_zones12 <- sf::st_read(dsn = "https://gis.data.cnra.ca.gov/api/download/v1/items/b70c43e5f737497eaa3319d0eff94733/geojson?layers=0") %>%
+  st_transform(crs = 3310) %>%
+  dplyr::select(Zone) %>%
+  dplyr::rename(Name = Zone)
+
+geo_zones3sac <- sf::st_read(
+  "data-raw/Tertiaray1_SouthSacFlorin/2018_ssacf.gdb"
+  ) %>%
+  st_transform(crs = 3310) %>%
+  dplyr::select(Name) %>%
+  mutate(Name = paste0("Tertiary - ", Name)) %>%
+  rename(geometry = Shape)
+
+geo_zones3stk <- sf::st_read(
+  "data-raw/Tertiary2_SouthStockton/2019_stck.gdb"
+  )%>%
+  st_transform(crs = 3310) %>%
+  dplyr::select(Name) %>%
+  mutate(Name = paste0("Tertiary - ", Name)) %>%
+  rename(geometry = Shape)
+
+geo_bounds <- geo_boundary %>%
+  bind_rows(geo_zones12,
+            geo_zones3sac,
+            geo_zones3stk)
+
+
+# 067  013  113  077  095
+co <- tigris::counties(
+  state = "06",
+  year = 2023
+)
+
+geo_co <- co %>%
+  dplyr::filter(COUNTYFP %in% c(
+    '067',
+    '013',
+    '113',
+    '077',
+    '095'
+  )) %>%
+  st_transform(crs = 3310)
+
 # generate internal data ----
-usethis::use_data(necessary_files, zone_N, composite_frame, internal = T, overwrite = T)
+usethis::use_data(
+  necessary_files,
+  zone_N,
+  composite_frame,
+  geo_bounds,
+  geo_co,
+  internal = T,
+  overwrite = T)
