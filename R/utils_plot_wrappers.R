@@ -875,9 +875,11 @@ ranked_to_num <- function(
 }
 
 # Spatial ----
-#' Get's a polygon for a bounding box around an sf object.
+#' Get a polygon for a bounding box around an sf object.
 #'
 #' @param sf_obj object of class sf.
+#' @param epsg is either an integer for the EPSG id or the WKT for defining the coordinate reference system.
+#' @return sf object.
 bbox_sfc <- function(
     sf_obj,
     epsg = 3310
@@ -903,6 +905,7 @@ bbox_sfc <- function(
 #' @param plot_obj is a ggplot2 object.
 #' @param boundary_obj is the object around which to build a box.
 #' @param dist is the distance in map units to buffer around the `boundary_obj`. If the crs is EPSG 3310, the units are in meters.
+#' @param zoom logical. Whether to return the bbox early.
 zoom_sf <- function(plot_obj,
                        boundary_obj,
                        dist,
@@ -927,6 +930,11 @@ zoom_sf <- function(plot_obj,
 
 
 #' Plot map of dichotmous variable
+#'
+#' @param props_sf a sf data.frame
+#' @param is_choropleth logical
+#' @param limits_ numeric length 2. The range of possible values.
+#' @param k_ integer. Number of classes.
 map_dichotomous <- function(
     props_sf,
     is_choropleth = TRUE,
@@ -946,7 +954,7 @@ map_dichotomous <- function(
       rounded = round(breaks*100, digits = 0)
     ) %>%
       dplyr::mutate(label = paste0(
-        rounded, "—", dplyr::lead(rounded), "%"
+        rounded, "\u2014", dplyr::lead(rounded), "%"
       )
       )
 

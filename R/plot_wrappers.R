@@ -978,10 +978,15 @@ cdrs_plt_stacked <- function(
   plt_
 }
 
+#' Map data preparer
+#'
+#' Prepares data to create a ggplot2 plot with spatial features.
+#'
 #' @param data_ is the DRS data set.
 #' @param col_ is a character vector specifying the column to prepare.
 #' @param level_ is a character (or integer, more on this later) of length 1 that specifies a factor level for which to calculate the mean (eg. we want the mean for just "Urban" or just "Suburban" residents). A `level_` *must* be specified for categorical variables. If an integer (eg. as either `1L` or `1`), the level corresponding that number will be selected. For example, 1 for Q2 would select "Urban".
 #' @param geo_var is a character vector, length 1.
+#' @param param_file is a file path to a plot_parameters xlsx file.
 #' @return list with type, proportions, column name of interest, level name of interest (if applicable), and the geographic variable name.
 cdrs_map_prep <- function(
     data_,
