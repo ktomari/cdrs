@@ -109,7 +109,7 @@ test_that("cdrs_map_prep - Q1_1",{
 
   expect_equal(
     object = round(
-      obj$stat,
+      obj$props$stat,
       digits = 6
     ),
     expected = expected_
@@ -136,7 +136,7 @@ test_that("cdrs_map_prep - Q2",{
 
   expect_equal(
     object = round(
-      obj$stat,
+      obj$props$stat,
       digits = 6
     ),
     expected = expected_
