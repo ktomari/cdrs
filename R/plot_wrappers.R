@@ -1,4 +1,5 @@
-# Exported helper functions and wrappers for ggplot() functions.
+# (Exported) plot set up functions and
+# wrappers for ggplot() functions.
 
 #' Create text for plots.
 #'
@@ -410,7 +411,7 @@ cdrs_plt_prep <- function(
   legend_wrap <- 20
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Determine plotting logic
+  # Determine plotting logic ----
   # (ie. what type of plot)
   logic_ <- plt_logic(
     file_ = param_file,
@@ -441,7 +442,11 @@ cdrs_plt_prep <- function(
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Remove angle brackets ----
-  if(remove_angle_brackets){
+  if(remove_angle_brackets &
+     out$type %in% c("ordinal",
+                     "diverging",
+                     "dichotomous",
+                     "categorical")){
     data_ <- remove_angle_brackets(data_,
                                    cols_)
     dict_ <- remove_angle_brackets(dict_, cols_ = "value")
@@ -451,17 +456,37 @@ cdrs_plt_prep <- function(
   # Get proportions ----
   # tibble columns:
   # variable, levels, mean, SE, percent, percent_lab
-  if(is_weighted){
-    props_ <- purrr::map_dfr(cols_,
-                             ~cdrs_props(data_ = data_,
-                                         col_ = .x))
+  if(out$type %in% c(
+    "ordinal",
+    "diverging",
+    "dichotomous",
+    "categorical"
+  )){
+    if(is_weighted){
+      props_ <- purrr::map_dfr(cols_,
+                               ~cdrs_props(data_ = data_,
+                                           col_ = .x))
+    } else {
+      props_ <- purrr::map_dfr(cols_,
+                               ~get_unwt_props(
+                                 data_ = data_,
+                                 col_ = .x
+                               ))
+    }
+  } else if(out$type == "numeric") {
+    stop(
+      stringr::str_glue(
+        "Issue: cdrs_plt_prep cannot handle '{out$type}' columns at this time."
+      )
+    )
   } else {
-    props_ <- purrr::map_dfr(cols_,
-                             ~get_unwt_props(
-                               data_ = data_,
-                               col_ = .x
-                             ))
+    stop(
+      stringr::str_glue(
+        "Issue: cdrs_plt_prep cannot handle '{out$type}' columns at this time."
+      )
+    )
   }
+
 
   # add encoding column into props (used in pal_maker)
   props_ <- props_ %>%
@@ -615,6 +640,7 @@ cdrs_plt_prep <- function(
             .f = ~stringr::str_wrap(.x, width = axis_wrap)
           )
         }
+
 
         # now create var_id
         props_ <- props_ %>%
@@ -951,3 +977,275 @@ cdrs_plt_stacked <- function(
   # return
   plt_
 }
+
+#' @param data_ is the DRS data set.
+#' @param col_ is a character vector specifying the column to prepare.
+#' @param level_ is a character (or integer, more on this later) of length 1 that specifies a factor level for which to calculate the mean (eg. we want the mean for just "Urban" or just "Suburban" residents). A `level_` *must* be specified for categorical variables. If an integer (eg. as either `1L` or `1`), the level corresponding that number will be selected. For example, 1 for Q2 would select "Urban".
+#' @param geo_var is a character vector, length 1.
+#' @return list with type, proportions, column name of interest, level name of interest (if applicable), and the geographic variable name.
+cdrs_map_prep <- function(
+    data_,
+    col_,
+    level_ = NA_character_,
+    geo_var = "geoid.county",
+    param_file = system.file("extdata",
+                             "plot_parameters.xlsx",
+                             package = "cdrs")
+){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Input validation ----
+  stopifnot(inherits(col_, "character") &
+              length(col_) > 0)
+
+  stopifnot(inherits(level_, "character") |
+              inherits(level_, "numeric"))
+
+  stopifnot(inherits(data_, "data.frame"))
+
+  stopifnot(inherits(geo_var, "character"))
+
+  stopifnot(geo_var %in% c(
+    "Zone",
+    "geoid.county"
+    # The following geographies are not supported at this time,
+    # although they could be:
+    # "Zip",
+    # "geoid.tract",
+    # "geoid.blockgroup",
+    # "DAP_NAME",
+    # "City"
+  ))
+
+  stopifnot(geo_var %in% names(data_))
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Logic ----
+  # (ie. what type of plot)
+  logic_ <- plt_logic(
+    file_ = param_file,
+    cols_ = col_
+  )
+
+  # set plot type
+  type_ <- logic_$plot_type1 %>%
+    unique()
+
+  # type validation
+  stopifnot(type_ %in% c(
+    "ordinal",
+    "diverging",
+    "dichotomous",
+    "categorical",
+    "numeric"
+  ))
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Subset data ----
+  data_ <- cdrs_subset(
+    data_ = data_,
+    cols_ = c(col_, geo_var)
+  )
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Angle brackets ----
+  if(type_ %in% "categorical"){
+    data_ <- remove_angle_brackets(data_,
+                                   col_)
+    # dict_ <- remove_angle_brackets(dict_, col_ = "value")
+
+    if(is.na(level_)){
+      warning(
+        "A level_ must be chosen. By default, set to first level."
+        )
+      level_ <- 1
+    }
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Numeric level selection.
+  # This functionality may be removed at a later point,
+  # but what it does is supply the level that corresponds
+  # to the level present in the factor column.
+  # We can assume consistency between different versions of the
+  # DRS data set, because all data sets have a dictionary,
+  # and in that dictionary, the order of factors is predetermined,
+  # and `cdrs_read()` ensures that.
+  if(inherits(level_, "numeric")){
+    lvls_ <- data_ %>%
+      dplyr::select(
+        tidyselect::all_of(col_)
+      ) %>%
+      dplyr::pull() %>%
+      levels()
+
+    if(length(lvls_) < level_){
+      warning(
+        "Selected numeric level_ exceeds number of available factor levels. Defaulting to first level."
+      )
+      level_ <- 1
+    }
+    level_ <- lvls_[level_]
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Ranked to numeric ----
+  # convert diverging scale questions to numeric.
+  if(type_ %in% "diverging"){
+
+    data_ <- purrr::map_dfc(data_, matches_to_NA)
+
+    data_ <- ranked_to_num(
+      data_ = data_,
+      col_ = col_,
+      zero_start = FALSE
+    )
+  } else if(type_ %in% "ordinal"){
+
+    data_ <- purrr::map_dfc(data_, matches_to_NA)
+
+    data_ <- ranked_to_num(
+      data_ = data_,
+      col_ = col_,
+      zero_start = TRUE
+    )
+  }
+
+  # Proportions ----
+  props_ <- cdrs_props_by(
+    data_ = data_,
+    col_ = col_,
+    by_col = geo_var
+  )
+
+  # rename by_col to geo.
+  props_ <- props_ %>%
+    dplyr::rename("geo" = "fcts")
+
+  # TODO
+  # Do we want to do anything with SE?
+  # se_ <- props_ %>%
+  #   dplyr::select(
+  #     tidyselect::matches("^se\\.*", perl = T)
+  #   )
+
+  # Remove Standard Error
+  props_ <- props_ %>%
+    dplyr::select(
+      !tidyselect::matches("^se\\.*", perl = T)
+    )
+
+  # Get statistic/value
+  if(type_ %in% "dichotomous"){
+
+    # Select geography, Yes
+    props_ <- props_ %>%
+      dplyr::select(geo,
+                    Yes) %>%
+      dplyr::rename("stat" = "Yes")
+  }
+
+  if(!is.na(level_)){
+    props_ <- props_ %>%
+      dplyr::select(
+        geo,
+        tidyselect::all_of(level_)
+      )
+
+    names(props_)[2] <- "stat"
+  }
+
+  # return
+  list(
+    type = type_,
+    props = props_,
+    col = col_,
+    level = level_,
+    geo_var = geo_var
+  )
+}
+
+#' Main function to create ggplot2 map on TIGER county geometry.
+#'
+#' @param prep_ is a list derived from `cdrs_map_prep`.
+#'
+cdrs_map_county <- function(
+    prep_
+){
+  stopifnot(prep_$geo_var == "geoid.county")
+
+  # spatial ----
+  prep_$props <-  geo_co %>%
+    dplyr::left_join(y = prep_$props,
+                     by = c("COUNTYFP" = "geo"))
+
+  legal_delta_bound <- geo_bounds %>%
+    dplyr::filter(Name == "Legal Delta Boundary")
+
+  if(prep_$type == "dichotomous"){
+    # dichotomous ----
+    # add label
+    prep_$props <- prep_$props %>%
+      dplyr::mutate(label = paste0(
+        round(stat * 100, digits = 1),
+        "%")
+      ) %>%
+      dplyr::mutate(label_color = dplyr::if_else(
+        condition = stat > 0.5,
+        true = "#222222",
+        false = "#dddddd"
+      ))
+
+    # create dichotomous map
+    plt <- map_dichotomous(
+      props_sf = prep_$props,
+      is_choropleth = F
+    )
+  }
+
+  # Add legal boundary for the delta
+  plt <- plt +
+    ggplot2::geom_sf(data = legal_delta_bound,
+                     fill = NA,
+                     color = "#888888",
+                     linewidth = 2)
+
+  plt <- zoom_sf(
+    plot_obj = plt,
+    boundary_obj = legal_delta_bound,
+    dist = 10000
+  )
+
+  # remove y and x lab
+  plt <- plt +
+    ggplot2::labs(
+      y = "",
+      x = ""
+    )
+
+  # get centroids of geometry, for placing labels.
+  centroids_sf <- geo_co
+  centroids_sf$geometry <- sf::st_centroid(centroids_sf$geometry)
+
+  # Extract x and y coordinates from centroids
+  centroids_df <- data.frame(
+    label = prep_$props$label,
+    label_color = prep_$props$label_color,
+    x = sf::st_coordinates(centroids_sf)[, 1],
+    y = sf::st_coordinates(centroids_sf)[, 2]
+  )
+
+  # Add label
+  plt <- plt +
+    ggrepel::geom_text_repel(
+      data = centroids_df,
+      mapping = ggplot2::aes(
+        x = x,
+        y = y,
+        label = label,
+        color = label_color)
+    ) +
+    ggplot2::scale_color_identity(guide = 'none')
+
+  # return
+  plt
+  }
