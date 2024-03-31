@@ -191,6 +191,17 @@ plt_logic <- function(
   stopifnot(inherits(file_, "character"))
   stopifnot(inherits(cols_, "character") | inherits(cols_, "NULL"))
 
+  if(!(all(grepl("^Q", cols_, perl = T)) |
+     all(grepl("\\_P$", cols_, perl = T)))
+     ){
+    warning(
+      paste0(
+        "Did you mean to supply these variables? ",
+        paste0(cols_, collapse = ", ")
+        )
+    )
+  }
+
   logic_ <- readxl::read_xlsx(path = file_,
                               sheet = "logic",
                               col_types = "text",
@@ -784,4 +795,206 @@ pal_main <- function(
   prep_
 }
 
+#' Convert ordinal scale columns to a numeric score.
+#'
+#' @param data_ DRS data.frame/tibble.
+#' @param col_ string.
+#' @param reverse_ logical. If we should reverse the levels. By default, the order of factor levels is not reversed because the input factors do not align with the output factors, which *may* cause confusion.
+#' @param zero_start logical. If we should have the first level be worth 0 or 1. In most cases of ordinal scale factors where the lowest level is something akin to "none", 0 is preferrable.
+#' @param convert_missing logical. Convert missingness variables to `NA`.
+#' @return a tibble (the data).
+ranked_to_num <- function(
+    data_,
+    col_,
+    reverse_ = FALSE,
+    zero_start = FALSE,
+    convert_missing = TRUE
+){
+  if(convert_missing){
+    # The following pipe chain takes factors in `col_`
+    # that are <missingness> and converts them to `NA`.
+    # This is not necessarily ideal for every scenario,
+    # but usually this is what we want.
+    data_ <- data_ %>%
+      mutate(!!col_ := forcats::fct_relabel(
+        .f = !!rlang::sym(col_),
+        .fun = ~purrr::map_vec(., function(fct){
+          if(stringr::str_detect(fct, "\\<.+\\>")){
+            NA
+          } else {
+            fct
+          }
+        })
+      )
+      )
+  }
 
+  # get levels (without NA values)
+  lvls_ <- data_ %>%
+    dplyr::pull(tidyselect::all_of(col_)) %>%
+    levels() %>%
+    `[`(!is.na(.))
+
+  if(reverse_){
+    lvls_ <- rev(lvls_)
+  }
+
+  # create lookup table
+  lookup_tbl <- tibble::tibble(
+    original_levels = lvls_
+  ) %>%
+    # Now add numeric value
+    dplyr::mutate(
+      new_score = dplyr::case_when(
+        !is.na(original_levels) ~ dplyr::row_number(),
+        .default = NA
+      )
+    )
+
+  if(zero_start){
+    # set first level to 0, instead of 1.
+    lookup_tbl <- lookup_tbl %>%
+      dplyr::mutate(new_score = new_score - 1)
+  }
+
+  # merge lookup table
+  data_ <- data_ %>%
+    dplyr::left_join(
+      y = lookup_tbl,
+      by = setNames("original_levels", col_)
+    )
+
+  # rename old `col_`,
+  # assign the `col_` name to `new_score`
+  data_ <- data_ %>%
+    dplyr::rename(setNames(col_, paste0(col_,"_label"))) %>%
+    dplyr::rename(setNames("new_score", col_))
+
+  # return
+  data_
+}
+
+# Spatial ----
+#' Get's a polygon for a bounding box around an sf object.
+#'
+#' @param sf_obj object of class sf.
+bbox_sfc <- function(
+    sf_obj,
+    epsg = 3310
+    ){
+
+  if(nrow(sf_obj) > 1){
+    sf_obj <- sf_obj %>%
+      sf::st_union()
+  }
+
+  sf_obj %>%
+    sf::st_bbox() %>%
+    sf::st_as_sfc(crs = epsg) %>%
+    sf::st_as_sf()
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#' Sets zoom level for ggplot map.
+#'
+#' @details Add this function to the end of your
+#' ggplot definition.
+#'
+#' @param plot_obj is a ggplot2 object.
+#' @param boundary_obj is the object around which to build a box.
+#' @param dist is the distance in map units to buffer around the `boundary_obj`. If the crs is EPSG 3310, the units are in meters.
+zoom_sf <- function(plot_obj,
+                       boundary_obj,
+                       dist,
+                       zoom = T){
+
+  # get level of zoom by using bounding boxes
+  bbox <- boundary_obj %>%
+    bbox_sfc() %>%
+    sf::st_buffer(dist = dist) %>%
+    sf::st_bbox()
+
+  if(!zoom){
+    return(bbox)
+  }
+
+  # add zoom as LAST object in ggplot() chain.
+  plot_obj +
+    ggplot2::coord_sf(
+      xlim = c(bbox$xmin, bbox$xmax),
+      ylim = c(bbox$ymin, bbox$ymax))
+}
+
+
+#' Plot map of dichotmous variable
+map_dichotomous <- function(
+    props_sf,
+    is_choropleth = TRUE,
+    limits_ = c(0,1),
+    k_ = 7L
+    ) {
+
+  stopifnot(inherits(k_, "integer"))
+
+  if(is_choropleth){
+    # create a table by which a new factor vector can replace
+    # the original `stat` column.
+    fct_tbl <- tibble::tibble(
+      breaks = seq(limits_[1],
+                   limits_[2],
+                   length.out = k_ + 1),
+      rounded = round(breaks*100, digits = 0)
+    ) %>%
+      dplyr::mutate(label = paste0(
+        rounded, "—", dplyr::lead(rounded), "%"
+      )
+      )
+
+    # replace a continuous `stat` with a factor of K groups.
+    props_sf <- props_sf %>%
+      dplyr::rename(stat1 = stat) %>%
+      dplyr::mutate(stat = cut(
+        x = stat1,
+        breaks = fct_tbl$breaks,
+        include.lowest = TRUE,
+        labels = fct_tbl$label[1:k_])
+      )
+  }
+
+  # Start the ggplot object
+  p <- ggplot2::ggplot() +
+    ggplot2::geom_sf(
+      data = props_sf,
+      mapping = ggplot2::aes(fill = stat),
+      color = "white") +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(fill = "stat")
+
+  # Add the appropriate scale based on the 'continuous' argument
+  if (is_choropleth) {
+
+    lvls_ <- props_sf$stat %>% levels()
+    pal_ <- grDevices::hcl.colors(n = k_,
+                                  palette = "viridis")
+
+    names(pal_) <- lvls_
+
+    # Discrete choropleth with no more than 7 cuts
+    p <- p + ggplot2::scale_fill_manual(
+        values = pal_
+      )
+
+  } else {
+
+    # Continuous scale for values between 0 and 1
+    p <- p + ggplot2::scale_fill_continuous(
+      name = "",
+      type = "viridis",
+      breaks = c(0.25, 0.5, 0.75, 1),
+      labels = c("25%", "50%", "75%", "100%"),
+      limits = c(0, 1)
+    )
+  }
+
+  return(p)
+}
