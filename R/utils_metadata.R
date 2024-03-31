@@ -1,4 +1,22 @@
 
+#' Helper for remove_angle_brackets
+#'
+#' @param vect_ is a character or factor.
+#' @return character vector.
+#' @noRd
+remove_vct_brackets <- function(
+    vect_){
+  # input validation ----
+  stopifnot(inherits(vect_, "character") |
+              inherits(vect_, "factor"))
+
+  # Pattern to match strings starting and ending with angle brackets
+  pattern <- "^<(.*)>$"
+
+  # Replace the matched pattern with the group captured by parentheses
+  stringr::str_replace(vect_, pattern, "\\1")
+}
+
 #' Removes angle brackets from missing variable levels.
 #'
 #' Remove angle brackets around missing variable levels. This is often used for plotting functions.
@@ -18,14 +36,14 @@ remove_angle_brackets <- function(
     # factor ----
     data_ %>%
       forcats::fct_relabel(
-        ~stringr::str_remove_all(., "[<>]")
+        .fun = remove_vct_brackets
       ) %>%
       return()
 
   } else if(inherits(data_, "character")) {
     # character ----
     data_ %>%
-      stringr::str_remove_all(., "[<>]") %>%
+      remove_vct_brackets() %>%
       return()
 
   } else if(is.null(cols_)){
@@ -47,7 +65,7 @@ remove_angle_brackets <- function(
       if(nm %in% cols_){
         col_ %>%
           forcats::fct_relabel(
-            .fun = ~stringr::str_remove_all(.x, "^\\<|\\>$")
+            .fun = remove_vct_brackets
           )
       } else {
         # not a specified column
