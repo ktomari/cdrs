@@ -60,7 +60,10 @@ cdrs_composite_index <- function(
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Error check: do we have all the columns we need?
-    stopifnot(ncol(sub_) == cols$ncol)
+    # If not return NULL
+    if(ncol(sub_) != cols$ncol){
+      return(NULL)
+    }
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Create Index Score Vector
