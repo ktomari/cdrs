@@ -151,16 +151,16 @@ cdrs_props <- function(
     return_stat = FALSE
     ){
   # ~~~~~~~~~~~~~~~~
-  # Error check
+  # Input validation ----
   stopifnot(length(col_) == 1 &
               is(col_, "character"))
 
   # ~~~~~~~~~~~~~~~~
-  # create survey design
+  # Complex survey design ----
   design_ <- cdrs_design(data_ = data_, set_fpc = F)
 
   # ~~~~~~~~~~~~~~~~
-  # get proportions
+  # Proportions ----
   props_ <- survey::svymean(x = stats::as.formula(paste0(
     "~",
     stringr::str_glue("`{col_}`")
@@ -169,6 +169,7 @@ cdrs_props <- function(
   na.rm = T)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Convert to tibble ----
   # NOTE: As of this writing, there is no broom::tidy() method for
   # objects of class 'svystat'. Thus, we must manually tidy it.
   # We don't want the svystat object,
@@ -229,5 +230,86 @@ cdrs_props <- function(
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   # return
+  props_
+}
+
+#' Wrapper for survey::svyby with svymean
+#'
+#' Function that wraps around survey::svyby with FUN defined as survey::svymean.
+#'
+#' @param data_ tibble. DRS dataset
+#' @param col_ character. Primary variable (name).
+#' @param by_col character. Subsetting factor (name).
+#' @param return_stat logical. Determines whether a tibble of proportions are returned, or if the "svyby" object is returned. In the latter case, {stats} functions like `confint` can be used on the "svyby" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svyby" object and its "methods" (ie. functions associated with this class of objects).
+cdrs_props_by <- function(
+    data_,
+    col_,
+    by_col,
+    return_stat = FALSE
+){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Complex survey design ----
+  # Create complex survey design object.
+  design_ <- cdrs_design(data_)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Proportions ----
+  # Get survey data means
+  props_ <- survey::svyby(
+    # define formula
+    formula = stats::as.formula(paste0("~", col_)),
+    # supply complex design object
+    design = design_,
+    # supply strata/factor by which to subset
+    by = as.formula(paste0("~", by_col)),
+    # choose desired function
+    FUN = survey::svymean,
+    # drop NA
+    na.rm = T)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Convert to tibble ----
+  if(!return_stat){
+    # first convert to tibble
+    # (Note, unlike svymean on its own, the row names will only be duplicate of
+    # the first column, which is the `by_col`.)
+    props_ <- tibble::as_tibble(props_)
+
+    # then rename column names
+    nm_ <- names(props_)
+
+    # Are any column names simply the `col_`?
+    filter1 <- nm_ == col_
+
+    if(T %in% filter1){
+      # rename the column named `col_`
+      nm_[filter1] <- "stat"
+    }
+
+    # Are any column names simply the `by_col`?
+    filter2 <- nm_ == by_col
+
+    # Change `by_col` to factor
+    if(T %in% filter2){
+      # rename `by_col`
+      nm_[filter2] <- "fcts"
+    }
+
+    # Do any columns have `col_` in them, but have other strings?
+    filter3 <- xor(
+      grepl(pattern = col_, x = nm_),
+      filter1
+    )
+
+    if(T %in% filter3){
+      # excise `col_`
+      nm_[filter3] <- sub(pattern = col_,
+                          replacement = "",
+                          x = nm_[filter3])
+    }
+
+    names(props_) <- nm_
+  }
+
   props_
 }
