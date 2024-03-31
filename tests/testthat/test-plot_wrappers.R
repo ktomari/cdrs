@@ -88,3 +88,57 @@ test_that("cdrs_plt_txt - NULL",{
 #     expected = expected_
 #   )
 # })
+
+test_that("cdrs_map_prep - Q1_1",{
+  # run test fun
+  obj <- cdrs_map_prep(
+    data_ = example_data,
+    col_ = "Q1_1",
+    geo_var = "geoid.county"
+  )
+
+  # Note, we're only comparing `stat` output,
+  # rounded to 6 digits.
+  expected_ <- c(0.3711247,
+                 0.5631657,
+                 0.2400812,
+                 0.2513739,
+                 0.6821373) |>
+    round(digits = 6)
+
+
+  expect_equal(
+    object = round(
+      obj$stat,
+      digits = 6
+    ),
+    expected = expected_
+  )
+})
+
+test_that("cdrs_map_prep - Q2",{
+  # run test fun
+  obj <- cdrs_map_prep(
+    data_ = example_data,
+    col_ = "Q2",
+    level_ = "Historic or Delta \"legacy\" town",
+    geo_var = "geoid.county"
+  )
+
+  expected_ <- c(
+    0.17592463,
+    0.06913833,
+    0.13205641,
+    0.38534312,
+    0.31936640
+  ) |>
+    round(digits = 6)
+
+  expect_equal(
+    object = round(
+      obj$stat,
+      digits = 6
+    ),
+    expected = expected_
+  )
+})
