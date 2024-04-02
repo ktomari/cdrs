@@ -88,6 +88,8 @@ cdrs_design <- function(
 #' @param data_ data.frame or tibble, the DRS data set.
 #' @param cols_ a character vector of column names.
 #' @param set_fpc logical. `NULL` defaults to the default of `cdrs_design`. See documentation on `cdrs_design`.
+#' @param is_props logical. Whether to return proportions or frequencies (ie. numerical count).
+#' @param is_table logical. Whether to return the default object of svytable() which is an object of class "svytable", "xtabs", and "table", or to convert it into a data.frame.
 #'
 #' @return svyby object
 #' @export
@@ -100,7 +102,9 @@ cdrs_design <- function(
 cdrs_crosstab <- function(
     data_,
     cols_,
-    set_fpc = NULL
+    set_fpc = TRUE,
+    is_props = TRUE,
+    is_table = FALSE
 ){
   stopifnot(length(cols_) == 2 & class(cols_) == "character")
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,14 +119,22 @@ cdrs_crosstab <- function(
   }
 
   # Perform contingency table
-  results <- survey::svyby(
-    formula = stats::as.formula(paste0("~", cols_[1])),
-    by = stats::as.formula(paste0("~", cols_[2])),
-    design = design_,
-    FUN = survey::svytotal,
-    keep.names = F,
-    na.rm = T
+  results <- survey::svytable(
+    formula = stats::as.formula(
+      paste0("~",
+             cols_[1],
+             " + ",
+             cols_[2])),
+    design = design_
   )
+
+  if(is_props){
+    results <- prop.table(results)
+  }
+
+  if(!is_table){
+    results <- as.data.frame(results)
+  }
 
   # return
   results
