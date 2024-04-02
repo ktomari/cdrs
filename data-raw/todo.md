@@ -12,6 +12,7 @@ Update documentation about MAR and other missingness in the missing data doc.
     * This is too slow! Using base-R should improve speed.
     * Determine if we want "uncertainty" levels in index scores that are a `mean()`. Current assumption: no. This is an error for idx_olcc in original code for summary report.
 * thematic plots don't work
+* Q15's plot has broken labels
 
 ## Tests
 
