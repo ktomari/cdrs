@@ -1,3 +1,5 @@
+# cdrs 0.2.0
+
 # cdrs 0.1.1
 
 In an effort to reach our next minor update, we're trying to stabilize and make evergreen the parameters for existing functions, adding more robust tests, and adding {survey} function wrappers. Strictly speaking, we have indeed added new functionality, but the "feature" we're building up to is not complete (ie. replicating the Summary Report), so this is why it is a (big) patch and not a minor update.
