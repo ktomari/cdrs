@@ -4,7 +4,7 @@
 \alias{cdrs_crosstab}
 \title{Run a 2-way weighted cross-tabulation on DRS data.}
 \usage{
-cdrs_crosstab(data_, cols_, set_fpc = NULL)
+cdrs_crosstab(data_, cols_, set_fpc = TRUE, is_props = TRUE, is_table = FALSE)
 }
 \arguments{
 \item{data_}{data.frame or tibble, the DRS data set.}
@@ -12,6 +12,10 @@ cdrs_crosstab(data_, cols_, set_fpc = NULL)
 \item{cols_}{a character vector of column names.}
 
 \item{set_fpc}{logical. \code{NULL} defaults to the default of \code{cdrs_design}. See documentation on \code{cdrs_design}.}
+
+\item{is_props}{logical. Whether to return proportions or frequencies (ie. numerical count).}
+
+\item{is_table}{logical. Whether to return the default object of svytable() which is an object of class "svytable", "xtabs", and "table", or to convert it into a data.frame.}
 }
 \value{
 svyby object
