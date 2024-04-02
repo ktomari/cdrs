@@ -453,7 +453,8 @@ cdrs_plt_prep <- function(
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Get proportions ----
+  # props_ ----
+  # Get proportions.
   # tibble columns:
   # variable, levels, mean, SE, percent, percent_lab
   if(out$type %in% c(
@@ -721,6 +722,22 @@ cdrs_plt_prep <- function(
       ))
   } else {
     out <- append(out, list(props = props_))
+  }
+
+  # Let's note here if the data are unweighted.
+  if(
+    ("caption" %in% names(out)) &
+    !is_weighted
+  ){
+    out$caption <- paste0(out$caption,
+                          " The results depicted here are unweighted. As an unweighted summary, this graph only represents those surveyed and only serves to demonstrate who was sampled.")
+  }
+
+  if(
+    ("title" %in% names(out)) &
+    !is_weighted
+  ){
+    out$title <- paste0(out$title, " (Unweighted) ")
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
