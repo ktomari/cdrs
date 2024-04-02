@@ -15,9 +15,11 @@
     Code
       cdrs_crosstab(data_ = demo, cols_ = c("SEX_P", "Q3_5"), set_fpc = T)
     Output
-        Q3_5 SEX_PFemale SEX_PMale se.SEX_PFemale se.SEX_PMale
-      1   No    64.97260  31.05917      15.779190     9.560387
-      2  Yes    29.26014  30.59424       8.187815     8.542056
+         SEX_P Q3_5      Freq
+      1 Female   No 0.4167952
+      2   Male   No 0.1992426
+      3 Female  Yes 0.1877020
+      4   Male  Yes 0.1962602
 
 # cdrs_props, return_stat = F, Q2
 

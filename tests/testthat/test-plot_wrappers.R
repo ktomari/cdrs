@@ -31,7 +31,7 @@ test_that("get_unwt_props. Demo SEX_P.",{
   # Add textual detail for plotting.
   props_ <- props_ %>%
     mutate(percent = round(mean * 100)) %>%
-    mutate(percent = paste0(percent, "%"))
+    mutate(percent_lab = forcats::as_factor(paste0(percent, "%")))
 
   expect_identical(
     object = get_unwt_props(example_data, "SEX_P"),
