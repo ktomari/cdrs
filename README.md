@@ -30,11 +30,11 @@ devtools::install_github("ktomari/cdrs", build_vignettes = TRUE)
 ```
 
 The code above not only installs {cdrs}, but also builds the vignettes.
-Vignettes are markdown documents that demonstrate the functions in a
+Vignettes are R markdown documents that demonstrate the functions in a
 package. The vignettes currently available in {cdrs} demonstrate the
 ‘basics’ and the ‘summary_report’. While the vignettes are in draft form
 and may contain errors, they are a good place to start to begin using
-{cdrs}. Try them out after you install the package, using a the command:
+{cdrs}. Try them out after you install the package, using the command:
 `vignette(topic = 'basics', package = 'cdrs')`
 
 ## Acknowledgements
