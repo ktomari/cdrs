@@ -40,7 +40,7 @@ fabricated_data <- cdrs_read_example(return_dict = T)
 
 ### Gender
 
-The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column.
+The public (nor example) data set have the question on gender (Q26) which is needed to reproduce the pie chart. The closest approximation is the `SEX_P` column. Note, because we want to demonstrate the survey population's demographics and not the actual population's demographics, we set `is_weighted` to `FALSE`.
 
 ```{r}
 # define column
@@ -52,7 +52,7 @@ plot_prep <- cdrs_plt_prep(
     cols_ = cols_,
     dict_ = fabricated_data$dict,
     remove_angle_brackets = F,
-    is_weighted = TRUE,
+    is_weighted = FALSE,
     # minimal labeling
     txt_options = list(
       label_form = "short",
@@ -74,7 +74,7 @@ For the following plots, we want to use the same parameters, so we'll store it i
 ```{r}
 pie_params <- list(
     remove_angle_brackets = F,
-    is_weighted = TRUE,
+    is_weighted = FALSE,
     # minimal labeling
     txt_options = list(
       label_form = "short",
