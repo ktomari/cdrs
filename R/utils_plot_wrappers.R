@@ -638,7 +638,7 @@ pal_mapper <- function(
 
 #' Create a color palette.
 #'
-#' This function largely serves as a wraparound for different color palette functions. However,
+#' This function largely serves as a wraparound for different color palette functions.
 #'
 #' @param prep_ list from `cdrs_plt_prep`
 #' @param reverse_ logical. direction of palette
@@ -654,15 +654,8 @@ pal_main <- function(
   # validation
   stopifnot(inherits(prep_, "list"))
 
-  stopifnot(all(
-    c(
-      "props",
-      "logic",
-      "type"
-    ) %in%
-      names(prep_)
-  )
-  )
+  stopifnot(all(c("props", "logic", "type") %in%
+                  names(prep_)))
 
   # get pal_id if there is one.
   pal_id_ <- prep_$logic$pal_id %>%
