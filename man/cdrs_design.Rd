@@ -16,7 +16,7 @@ respectively.}
 correction.}
 }
 \value{
-A R object of class survey.design (from {survey})
+A R object of class survey.design (from \{survey\})
 }
 \description{
 This function wraps around survey::svydesign() to appropriately create a
