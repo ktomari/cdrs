@@ -31,7 +31,7 @@
 #' respectively.
 #' @param set_fpc logical. Determines if we need to set the finite population
 #' correction.
-#' @return A R object of class survey.design (from {survey})
+#' @return A R object of class survey.design (from \{survey\})
 #' @export
 #'
 #' @examples
@@ -142,11 +142,11 @@ cdrs_crosstab <- function(
 
 #' Calculates CDRS survey variable proportion.
 #'
-#' This function is a wraparound function for survey::svymean. By default, it produces a tibble with the mean and standard error (calculated by linearization, see {survey} package for more details). Alternatively, return the 'svystat' object, which is simply the object yielded by survey::svymean.
+#' This function is a wraparound function for survey::svymean. By default, it produces a tibble with the mean and standard error (calculated by linearization, see \{survey\} package for more details). Alternatively, return the 'svystat' object, which is simply the object yielded by survey::svymean.
 #'
 #' @param data_ is a tibble/data.frame of the DRS data set.
 #' @param col_ is a character vector, with the column of interest.
-#' @param return_stat is logical. Determines whether a tibble of proportions are returned, or if the "svystat" object is returned. In the latter case, {stats} functions like `confint` can be used on the "svystat" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svystat" object and its "methods" (ie. functions associated with this class of objects).
+#' @param return_stat is logical. Determines whether a tibble of proportions are returned, or if the "svystat" object is returned. In the latter case, \{stats\} functions like `confint` can be used on the "svystat" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svystat" object and its "methods" (ie. functions associated with this class of objects).
 #' @return either a tibble or svystat object.
 #' @export
 #' @importFrom methods is
@@ -252,7 +252,7 @@ cdrs_props <- function(
 #' @param data_ tibble. DRS dataset
 #' @param col_ character. Primary variable (name).
 #' @param by_col character. Subsetting factor (name).
-#' @param return_stat logical. Determines whether a tibble of proportions are returned, or if the "svyby" object is returned. In the latter case, {stats} functions like `confint` can be used on the "svyby" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svyby" object and its "methods" (ie. functions associated with this class of objects).
+#' @param return_stat logical. Determines whether a tibble of proportions are returned, or if the "svyby" object is returned. In the latter case, \{stats\} functions like `confint` can be used on the "svyby" object to derive things like the confidence interval for each factor. See the documentation on `svymean` for detailed information on the "svyby" object and its "methods" (ie. functions associated with this class of objects).
 cdrs_props_by <- function(
     data_,
     col_,
