@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_wrappers.R
 \name{cdrs_plt_pie}
 \alias{cdrs_plt_pie}
-\title{Plot a pie chart.}
+\title{Plot a pie chart with ggplot2.}
 \usage{
 cdrs_plt_pie(prep_)
 }
@@ -13,5 +13,5 @@ cdrs_plt_pie(prep_)
 an object of class ggplot.
 }
 \description{
-Plot a pie chart.
+Plot a pie chart with ggplot2.
 }

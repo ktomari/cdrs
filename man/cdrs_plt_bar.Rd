@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_wrappers.R
 \name{cdrs_plt_bar}
 \alias{cdrs_plt_bar}
-\title{Dichotomous Question Bar Plots.}
+\title{Dichotomous Question Bar Plots with ggplot2.}
 \usage{
 cdrs_plt_bar(prep_)
 }

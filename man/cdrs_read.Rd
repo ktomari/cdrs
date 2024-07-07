@@ -11,7 +11,7 @@ cdrs_read(path_ = NULL, relevel_ = "default", return_dict = TRUE)
 
 \item{relevel_}{either a character or list. This parameter determines if the data should be 1) revised according to the \code{"default"} settings of \code{cdrs_revise()}, which converts certain missing values like \if{html}{\out{<Missing>}} to \code{NA}; 2) remain untouched, \code{"none"}, leaving any corrections to factor levels for post-reading; or 3) a list of logical values with the matching parameters of \code{cdrs_revise()}.}
 
-\item{return_dict}{logical. If \code{TRUE} returns list with both the data dictionary and the data. The data dictionary is an optional parameter in some {cdrs} functions that adds additional metadata information for deliverables (eg. figure descriptions for plots).}
+\item{return_dict}{logical. If \code{TRUE} returns list with both the data dictionary and the data. The data dictionary is an optional parameter in some \{cdrs\} functions that adds additional metadata information for deliverables (eg. figure descriptions for plots).}
 }
 \value{
 Depending on \code{return_dict}, either returns a tibble of the Delta Residents Survey 2023 data set; or returns a list with two tibbles: the data dictionary, \code{dict} and the DRS data set, \code{data}.

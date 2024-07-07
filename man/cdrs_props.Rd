@@ -11,13 +11,13 @@ cdrs_props(data_, col_, return_stat = FALSE)
 
 \item{col_}{is a character vector, with the column of interest.}
 
-\item{return_stat}{is logical. Determines whether a tibble of proportions are returned, or if the "svystat" object is returned. In the latter case, {stats} functions like \code{confint} can be used on the "svystat" object to derive things like the confidence interval for each factor. See the documentation on \code{svymean} for detailed information on the "svystat" object and its "methods" (ie. functions associated with this class of objects).}
+\item{return_stat}{is logical. Determines whether a tibble of proportions are returned, or if the "svystat" object is returned. In the latter case, \{stats\} functions like \code{confint} can be used on the "svystat" object to derive things like the confidence interval for each factor. See the documentation on \code{svymean} for detailed information on the "svystat" object and its "methods" (ie. functions associated with this class of objects).}
 }
 \value{
 either a tibble or svystat object.
 }
 \description{
-This function is a wraparound function for survey::svymean. By default, it produces a tibble with the mean and standard error (calculated by linearization, see {survey} package for more details). Alternatively, return the 'svystat' object, which is simply the object yielded by survey::svymean.
+This function is a wraparound function for survey::svymean. By default, it produces a tibble with the mean and standard error (calculated by linearization, see \{survey\} package for more details). Alternatively, return the 'svystat' object, which is simply the object yielded by survey::svymean.
 }
 \examples{
 dat <- cdrs_read_example(return_dict = FALSE)

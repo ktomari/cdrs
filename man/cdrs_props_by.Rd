@@ -13,7 +13,7 @@ cdrs_props_by(data_, col_, by_col, return_stat = FALSE)
 
 \item{by_col}{character. Subsetting factor (name).}
 
-\item{return_stat}{logical. Determines whether a tibble of proportions are returned, or if the "svyby" object is returned. In the latter case, {stats} functions like \code{confint} can be used on the "svyby" object to derive things like the confidence interval for each factor. See the documentation on \code{svymean} for detailed information on the "svyby" object and its "methods" (ie. functions associated with this class of objects).}
+\item{return_stat}{logical. Determines whether a tibble of proportions are returned, or if the "svyby" object is returned. In the latter case, \{stats\} functions like \code{confint} can be used on the "svyby" object to derive things like the confidence interval for each factor. See the documentation on \code{svymean} for detailed information on the "svyby" object and its "methods" (ie. functions associated with this class of objects).}
 }
 \description{
 Function that wraps around survey::svyby with FUN defined as survey::svymean.

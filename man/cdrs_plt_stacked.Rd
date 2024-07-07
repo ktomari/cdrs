@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_wrappers.R
 \name{cdrs_plt_stacked}
 \alias{cdrs_plt_stacked}
-\title{Creates stacked bar plot.}
+\title{Creates stacked bar plot with ggplot2.}
 \usage{
 cdrs_plt_stacked(prep_)
 }
