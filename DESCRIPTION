@@ -15,7 +15,6 @@ Imports:
     digest,
     dplyr,
     forcats,
-    ggrepel,
     magrittr,
     methods,
     purrr,
