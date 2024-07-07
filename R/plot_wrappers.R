@@ -838,6 +838,7 @@ cdrs_plt_bar <- function(
     )
   }
 
+  # adjust prep_$props with color palette
   prep_ <- pal_main(
     prep_ = prep_
   )
