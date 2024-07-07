@@ -276,7 +276,7 @@ cdrs_validate <- function(
 #'
 #' @param path_ is a character vector of length 1. Provides the path to the directory containing all the relevant files, including the data dictionary, the data in csv form, and the hash.txt. This path may also lead to a zip file. By default the path is to the current working directory.
 #' @param relevel_ either a character or list. This parameter determines if the data should be 1) revised according to the `"default"` settings of `cdrs_revise()`, which converts certain missing values like <Missing> to `NA`; 2) remain untouched, `"none"`, leaving any corrections to factor levels for post-reading; or 3) a list of logical values with the matching parameters of `cdrs_revise()`.
-#' @param return_dict logical. If `TRUE` returns list with both the data dictionary and the data. The data dictionary is an optional parameter in some {cdrs} functions that adds additional metadata information for deliverables (eg. figure descriptions for plots).
+#' @param return_dict logical. If `TRUE` returns list with both the data dictionary and the data. The data dictionary is an optional parameter in some \{cdrs\} functions that adds additional metadata information for deliverables (eg. figure descriptions for plots).
 #' @return Depending on `return_dict`, either returns a tibble of the Delta Residents Survey 2023 data set; or returns a list with two tibbles: the data dictionary, `dict` and the DRS data set, `data`.
 #' @export
 #'
