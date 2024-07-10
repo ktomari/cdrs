@@ -17,7 +17,7 @@ cdrs_plt_txt(
 \arguments{
 \item{dict_}{is the data dictionary. All columns in \code{cols_} must be present in \code{dict_$Variable}.}
 
-\item{cols_}{variable/column names of the DRS data.}
+\item{cols_}{character. variable/column names of the DRS data.}
 
 \item{label_form}{character. Options include "short", "alphabet", \code{NULL}. These labels correspond to the table created by \code{plt_labels()}. If "short", either the variable \code{short_label} or \code{short_lvl} is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If \code{NULL} no table is returned.}
 

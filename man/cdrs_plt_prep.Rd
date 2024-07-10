@@ -19,7 +19,7 @@ cdrs_plt_prep(
 \arguments{
 \item{data_}{the DRS data.}
 
-\item{cols_}{the columns of interest.}
+\item{cols_}{a character vector of the columns of interest.}
 
 \item{dict_}{the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
 

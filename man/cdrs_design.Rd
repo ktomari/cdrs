@@ -4,16 +4,17 @@
 \alias{cdrs_design}
 \title{Create Survey Design Object.}
 \usage{
-cdrs_design(data_, set_fpc = T)
+cdrs_design(data_, set_fpc = TRUE)
 }
 \arguments{
-\item{data_}{A tibble or data.frame which contains the columns/variables of
-interest, as well as the Zone and WTFINAL columns which concern the
-stratification and weights used in specifying the survey design,
+\item{data_}{(tibble or data.frame). Table which contains the
+columns/variables of interest, as well as the Zone and WTFINAL columns which
+concern the stratification and weights used in specifying the survey design,
 respectively.}
 
-\item{set_fpc}{logical. Determines if we need to set the finite population
-correction.}
+\item{set_fpc}{(logical). Determines if we need to set the finite population
+correction. By default set to \code{TRUE} because the sample of Zone 1 is higher by
+proportion compared to the other two zones.}
 }
 \value{
 A R object of class survey.design (from \{survey\})
