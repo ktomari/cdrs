@@ -25,12 +25,13 @@
 #' reproducibility. For details on how weights were constructed please visit
 #' the project documentation.
 #'
-#' @param data_ A tibble or data.frame which contains the columns/variables of
-#' interest, as well as the Zone and WTFINAL columns which concern the
-#' stratification and weights used in specifying the survey design,
+#' @param data_ (tibble or data.frame). Table which contains the
+#' columns/variables of interest, as well as the Zone and WTFINAL columns which
+#' concern the stratification and weights used in specifying the survey design,
 #' respectively.
-#' @param set_fpc logical. Determines if we need to set the finite population
-#' correction.
+#' @param set_fpc (logical). Determines if we need to set the finite population
+#' correction. By default set to `TRUE` because the sample of Zone 1 is higher by
+#' proportion compared to the other two zones.
 #' @return A R object of class survey.design (from \{survey\})
 #' @export
 #'
@@ -43,7 +44,11 @@
 #' cdrs_design(df)
 cdrs_design <- function(
     data_,
-    set_fpc = T) {
+    set_fpc = TRUE
+) {
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Input validation ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   stopifnot(
     ("Zone" %in% names(data_)) | ("WTFINAL" %in% names(data_))
   )
@@ -106,11 +111,16 @@ cdrs_crosstab <- function(
     is_props = TRUE,
     is_table = FALSE
 ){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Input validation ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   stopifnot(length(cols_) == 2 & class(cols_) == "character")
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Subset
   data_ <- cdrs_subset(data_, cols_)
 
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Complex survey design
   if(is.null(set_fpc)){
     design_ <- cdrs_design(data_)
@@ -118,6 +128,7 @@ cdrs_crosstab <- function(
     design_ <- cdrs_design(data_, set_fpc = set_fpc)
   }
 
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Perform contingency table
   results <- survey::svytable(
     formula = stats::as.formula(
@@ -132,7 +143,7 @@ cdrs_crosstab <- function(
     results <- prop.table(results)
   }
 
-  if(!is_table){
+  if(is_table){
     results <- as.data.frame(results)
   }
 
@@ -169,16 +180,19 @@ cdrs_props <- function(
 
   # ~~~~~~~~~~~~~~~~
   # Complex survey design ----
-  design_ <- cdrs_design(data_ = data_, set_fpc = F)
+  design_ <- cdrs_design(data_ = data_)
 
   # ~~~~~~~~~~~~~~~~
   # Proportions ----
-  props_ <- survey::svymean(x = stats::as.formula(paste0(
-    "~",
-    stringr::str_glue("`{col_}`")
-  )),
-  design = design_,
-  na.rm = T)
+  props_ <- survey::svymean(
+    x = stats::as.formula(
+      paste0(
+        "~",
+        stringr::str_glue("`{col_}`")
+      )
+    ),
+    design = design_,
+    na.rm = T)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Convert to tibble ----
