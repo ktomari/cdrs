@@ -111,6 +111,7 @@ plt_labels <- function(
                             col_types = "text",
                             na = c("", "NA")
   ) %>%
+    # see utils_load_data.R for txt_to_straight_quotes
     purrr::map_dfc(., txt_to_straight_quotes)
 
   if(!inherits(dict_, "NULL")){
@@ -128,8 +129,8 @@ plt_labels <- function(
       tidyr::nest(.by = Variable) %>%
       dplyr::mutate(data = purrr::map2(
         # note, `data` is the column `nest` creates by default.
-        data,
-        Variable,
+        data,  # input 1, `tb`
+        Variable,  # input 2, `var`
         function(tb, var){
           # if there are no "level"s,
           # eg. Q1_0.
