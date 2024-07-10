@@ -15,11 +15,10 @@
     Code
       cdrs_crosstab(data_ = demo, cols_ = c("SEX_P", "Q3_5"), set_fpc = T)
     Output
-         SEX_P Q3_5      Freq
-      1 Female   No 0.4167952
-      2   Male   No 0.1992426
-      3 Female  Yes 0.1877020
-      4   Male  Yes 0.1962602
+              Q3_5
+      SEX_P           No       Yes
+        Female 0.4167952 0.1877020
+        Male   0.1992426 0.1962602
 
 # cdrs_props, return_stat = F, Q2
 
@@ -30,8 +29,8 @@
         variable levels                               mean     SE percent percent_lab
         <chr>    <fct>                               <dbl>  <dbl>   <dbl> <chr>      
       1 Q2       "Urban"                             0.145 0.0432      15 15%        
-      2 Q2       "Suburban"                          0.181 0.0525      18 18%        
-      3 Q2       "Historic or Delta \"legacy\" town" 0.229 0.0609      23 23%        
-      4 Q2       "Rural (outside of town)"           0.218 0.0540      22 22%        
-      5 Q2       "<I don't know>"                    0.227 0.0546      23 23%        
+      2 Q2       "Suburban"                          0.181 0.0524      18 18%        
+      3 Q2       "Historic or Delta \"legacy\" town" 0.229 0.0608      23 23%        
+      4 Q2       "Rural (outside of town)"           0.218 0.0539      22 22%        
+      5 Q2       "<I don't know>"                    0.227 0.0545      23 23%        
 
