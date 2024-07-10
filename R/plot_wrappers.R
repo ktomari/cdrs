@@ -879,7 +879,6 @@ cdrs_plt_pie <- function(
 #' Plot questions from the DRS data set with only one level of interest (eg. questions where we only want to show "Yes" responses).
 #'
 #' @param prep_ the tibble returned from `cdrs_plt_prep.`
-#' @param display_col_totals logical. Should the graph display column total?
 #' @return an object of class ggplot.
 #' @export
 cdrs_plt_bar <- function(
