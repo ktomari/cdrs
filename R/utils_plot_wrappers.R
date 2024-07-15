@@ -112,17 +112,18 @@ plt_labels <- function(
                             na = c("", "NA")
   ) %>%
     # see utils_load_data.R for txt_to_straight_quotes
-    purrr::map_dfc(., txt_to_straight_quotes)
+    purrr::map_dfc(., txt_to_straight_quotes) %>%
+    tidyr::fill(id, full_title, .direction = "down")
 
   if(!inherits(dict_, "NULL")){
     # return
     # Before returning `labs`,
     # we will see if there are "factors" listed in the `dict_`
-    # (under `name` == "factors)
+    # (under `name` == "factors")
     # that are not present in the labs' level columns.
     # Case: dict_ may have various missingness values like,
     # <I don't know>
-    # Which are not present in the labels csv.
+    # Which are not present in the labels spreadsheet.
     # Therefore, we add these missing levels to `labs`.
     labs %>%
       dplyr::filter(Variable %in% unique(dict_$Variable)) %>%
@@ -166,7 +167,7 @@ plt_labels <- function(
           # return
           tb %>%
             dplyr::bind_rows(tb2) %>%
-            tidyr::fill(short_title, .direction = "down")
+            tidyr::fill(id, full_title, short_title, .direction = "down")
         })) %>%
       tidyr::unnest(data)
   } else {
@@ -253,11 +254,17 @@ plt_pal_guide <- function(
 #' Calculate plot wrap ratio
 #'
 #' @param title_size in pts.
+#' @param m is the multiplier in the slope function.
+#' @param b is the constant in the slop function.
 #' @return numeric, representing max characters in title.
 #' @noRd
-plt_ratio <- function(title_size){
+plt_ratio <- function(
+    title_size,
+    m = -8.25,
+    b = 218.5
+    ){
   floor(
-    (-8.25 * title_size) + 218.5
+    (m * title_size) + b
   )
 }
 
@@ -280,7 +287,7 @@ plt_decorate <- function(
   # approx. font size ratio.
   max_char <- plt_ratio(prep_$title_size)
 
-  # add labs
+  # add title, subtitle, caps ----
   plt_ <- plt_ +
     ggplot2::labs(
       title = {
@@ -307,24 +314,24 @@ plt_decorate <- function(
                               width = max_char/.9)
           } else {
             stringr::str_wrap(prep_$subtitle,
-                              width = max_char/.85)
+                              width = max_char * .8)
           }
         } else {
           NULL
         }
       },
       caption = {
-        if("caption" %in% items_){
+        if("captions" %in% items_){
           if(prep_$type %in% c("dichotomous",
                                "ordinal",
                                "categorical")){
             stringr::str_wrap(
-              prep_$caption,
+              paste0(prep_$captions, collapse = " "),
               width = floor((max_char/.7) * .5)
             )
           } else {
             stringr::str_wrap(
-              prep_$caption,
+              paste0(prep_$captions, collapse = " "),
               width = max_char/.7
             )
           }
@@ -367,7 +374,7 @@ plt_decorate <- function(
   }
 
   # caption
-  if("caption" %in% items_){
+  if("captions" %in% items_){
     plt_ <- plt_ +
       ggplot2::theme(
         plot.caption = ggplot2::element_text(
@@ -381,6 +388,7 @@ plt_decorate <- function(
       )
   }
 
+  # Axis Text and Title ----
   # axis.title
   # eg. "Percent"
   plt_ <- plt_ +
@@ -400,6 +408,18 @@ plt_decorate <- function(
       )
     )
 
+  if(prep_$yaxis == FALSE &
+     !(prep_$type %in% c("categorical"))){
+    plt_ <- plt_ +
+      ggplot2::theme(
+        axis.text.y = ggplot2::element_blank(),
+        axis.ticks.y = ggplot2::element_blank()
+      )
+  }
+  # TODO as of this writing, there is no way to omit the legend
+  # in categorical plots, which would be the analog to prep_$yaxis == F.
+
+  # theme ----
   plt_ <- plt_ +
     ggplot2::theme(
       plot.margin = ggplot2::margin(
@@ -410,13 +430,37 @@ plt_decorate <- function(
         unit = "pt")
     )
 
-  # legend spacing
-  if(prep_$type %in% c("categorical")){
+  # legend spacing ----
+  if(prep_$type %in% c("ordinal")){
     plt_ <- plt_ +
       ggplot2::theme(
-        legend.spacing.y = grid::unit(prep_$title_size/4, "pt")
+        legend.spacing.y = grid::unit(prep_$title_size * 0.7, "pt"),
+        legend.text = ggplot2::element_text(
+          size = grid::unit(prep_$title_size * 0.7, "pt")
+          )
       ) +
-      ggplot2::guides(fill = ggplot2::guide_legend(byrow = TRUE))
+      ggplot2::guides(fill = ggplot2::guide_legend(
+        byrow = TRUE,
+        reverse = TRUE,
+        override.aes = list(
+          color = "#333333", # Black stroke
+          size = prep_$title_size * 0.3,
+          linetype = 1
+        )
+      ))
+    # ggplot2::guides(fill = ggplot2::guide_legend(byrow = TRUE))
+  } else if(prep_$type %in% c("categorical")){
+    plt_ <- plt_ +
+      ggplot2::theme(
+        legend.spacing.y = grid::unit(prep_$title_size * 0.7, "pt"),
+        legend.text = ggplot2::element_text(
+          size = grid::unit(prep_$title_size * 0.7, "pt")
+        )
+      ) +
+      ggplot2::guides(fill = ggplot2::guide_legend(
+        reverse = TRUE
+      )
+      )
   }
 
   # return
