@@ -7,7 +7,7 @@
 #'
 #' @param dict_ is the data dictionary. All columns in `cols_` must be present in `dict_$Variable`.
 #' @param cols_ character. variable/column names of the DRS data.
-#' @param label_form character. Options include "short", "alphabet", `NULL`. These labels correspond to the table created by `plt_labels()`. If "short", either the variable `short_label` or `short_lvl` is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If `NULL` no table is returned.
+#' @param label_form character. Options include "short", "alphabet", "default", and `NULL`. These labels correspond to the table created by `plt_labels()`. If "short", either the variable `short_label` or `short_lvl` is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If either "qid" or `NULL` no table is returned because the y-axis label will either remain the default (eg. Q1_0, Q1_1, etc), or it will be axis.text element blank (ie. there will be no label).
 #' @param title_form character. Options include "short", "long" or `NULL`. If "short" the `short_title` is retrieved from the labels table (see `plt_labels()`), If "long", the Label value is retrieved from `dict_`. If `NULL`, nothing is returned.
 #' @param subtitle_ logical. If `TRUE` it returns the long title (ie. Label) from the `dict_`.
 #' @param caption_ logical. If `TRUE` a detailed message include valid response counts and missingness variable counts returned.
@@ -77,6 +77,7 @@ cdrs_plt_txt <- function(
 
   dict_ <- enrich_dict(dict_)
 
+  # init labs ----
   # load labels (from data.frame or character path to xlsx)
   # column names: Variable, short_title,
   # label, short_label, level, short_level.
@@ -90,8 +91,11 @@ cdrs_plt_txt <- function(
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # initialize output list.
+  # initialize output lists.
   out <- list()
+  captions <- list(
+    about_survey = "California Delta Residents Survey (2023) data were collected in the first quarter of 2023."
+  )
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # labels/levels ----
@@ -101,7 +105,7 @@ cdrs_plt_txt <- function(
 
     if(label_form == "short"){
       out$labels <- labs %>%
-        dplyr::select(-short_title) %>%
+        dplyr::select(-short_title, -full_title) %>%
         dplyr::select(tidyselect::where(~!all(is.na(.))))
 
     } else if (label_form == "alphabet"){
@@ -116,6 +120,8 @@ cdrs_plt_txt <- function(
                             floor(dplyr::row_number()/26))
         )
         )
+    } else if(label_form == "default") {
+      out$labels <- NULL
     }
 
   } else {
@@ -138,35 +144,17 @@ cdrs_plt_txt <- function(
       unique() %>%
       paste0(., collapse = " & ")
   } else if(title_form == "long"){
-    if("prompt_lab" %in% dict_$name){
-      out$title <- dict_ %>%
-        dplyr::filter(name == "prompt_lab") %>%
-        generate_grp() %>%
-        dplyr::mutate(value = paste0("Q", grp, ". ", value)) %>%
-        dplyr::pull(value) %>%
-        unique() %>%
-        stringr::str_squish() %>%
-        paste0(., collapse = " & ")
-    } else if("Label" %in% dict_$name) {
-      out$title <- dict_ %>%
-        dplyr::filter(name == "Label") %>%
-        dplyr::pull(value) %>%
-        unique() %>%
-        stringr::str_squish() %>%
-        paste0(., collapse = " & ")
-    } else {
-      # This should only run for Demographics/Public Variables.
-      # The issue is that the dictionary for these variables do not have
-      # a `Label` (which is the source for `prompt_lab` as well).
-      # Therefore, in case "Long" form title are chosen, we fall back
-      # upon shiny_parameters.xlsx where no `Label` in dictionary is given.
-      out$title <- labs %>%
-        dplyr::filter(Variable %in% cols_) %>%
-        dplyr::pull(short_title) %>%
-        unique() %>%
-        stringr::str_squish() %>%
-        paste0(., collapse = " & ")
-    }
+    out$title <- labs %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      dplyr::filter(!is.na("full_title")) %>%
+      dplyr::mutate(full_title = paste0("Q", id, ". ", full_title)) %>%
+      dplyr::pull("full_title") %>%
+      unique() %>%
+      paste0(., collapse = " & ")
+
+    # if we choose "long", we don't want it reproduced in the subtitle
+    # so, we turn off subtitle
+    subtitle <- FALSE
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -175,24 +163,23 @@ cdrs_plt_txt <- function(
     out$subtitle <- NULL
   } else {
 
-    if("prompt_lab" %in% dict_$name){
-      out$subtitle <- dict_ %>%
-        dplyr::filter(name == "prompt_lab") %>%
-        generate_grp() %>%
-        dplyr::mutate(value = paste0("Q", grp, ". ", value)) %>%
-        dplyr::pull(value) %>%
-        unique() %>%
-        stringr::str_squish() %>%
-        paste0(., collapse = " & ")
-    } else {
-      out$subtitle <- NULL
-    }
+    # Note, new approach (20240710):
+    # Instead of deriving the full question for the subtitle from the
+    # dictionary, we now derive it from inst/extdata/plot_parameters.xlsx
+    # under the 'labels' sheet.
+    out$subtitle <- labs %>%
+      dplyr::filter(Variable %in% cols_) %>%
+      dplyr::filter(!is.na("full_title")) %>%
+      dplyr::mutate(full_title = paste0("Q", id, ". ", full_title)) %>%
+      dplyr::pull("full_title") %>%
+      unique() %>%
+      paste0(., collapse = " & ")
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # captions ----
   if(!caption_){
-    out$captions <- NULL
+    captions <- NULL
   } else {
 
     ## missingness ----
@@ -272,15 +259,21 @@ cdrs_plt_txt <- function(
       missingness_txt <- NULL
     }
 
-    ## response count ----
+    # store to output
+    captions$missingness <- missingness_txt
+
+    # response count ----
 
     response_cnt <- dict_ %>%
       dplyr::filter(Variable %in% cols_) %>%
       dplyr::filter(name == "Valid Responses") %>%
       generate_grp() %>%
       dplyr::mutate(grp = dplyr::case_when(
+        # This is needed for variables like AGE_P
+        # that `generate_grp` yields only NA values.
+        # Usually,`generate_grp` produces a value like "1" or "1a".
         is.na(grp) ~ Variable,
-        .default = paste0("Q", grp)
+        .default = grp
       )) %>%
       dplyr::group_by(grp) %>%
       tidyr::nest(nested = c(Variable, value)) %>%
@@ -292,41 +285,45 @@ cdrs_plt_txt <- function(
         }
       })) %>%
       tidyr::unnest(nested) %>%
-      dplyr::mutate(txt = paste0(grp, " (n = ", txt, ")")) %>%
+      dplyr::mutate(txt = paste0(
+        " (n = ",
+        txt,
+        ")."
+      )) %>%
       dplyr::pull(txt)
 
+    # store to output
     if(length(response_cnt) > 1){
-      response_cnt <- NULL
-    }
-
-    ## supplemental caption ----
-    if("supplemental_caption" %in% names(labs)){
-      supplemental_caption <- labs$supplemental_caption %>% unique()
+      captions$response_cnt <- NULL
     } else {
-      supplemental_caption <- ""
+      captions$response_cnt <- response_cnt %>%
+        paste0(collapse = ", ") %>%
+        paste0("Valid responses for this variable ", .)
     }
-    ## store caption ----
-    # Now we store everything for output
-    out$caption <- paste0(
-      "California Delta Residents Survey (2023) data were collected in the first quarter of 2023. ",
-      "Total (n = ",
-      dict_$value[dict_$name == "Total (n)"][1],
-      "). ",
-      ifelse(!inherits(response_cnt, "NULL"),
-             response_cnt %>%
-               paste0(collapse = ", ") %>%
-               paste0("Valid responses ", ., "."),
-             ""),
-      ifelse(is.null(missingness_txt),
-             "",
-             paste0(c(" ",
-               missingness_txt))),
-      " ",
-      supplemental_caption
-    ) %>%
-      stringr::str_squish()
 
-    ## alphabetical cap ----
+    # labs qid notes ----
+    # These are survey question specific notes.
+    # See inst/extdata/plot_parameters.xlsx
+    if("caption_note" %in% names(labs)){
+      qid_notes <- labs$caption_note %>%
+        unique()
+
+    } else {
+      qid_notes <- NULL
+    }
+
+    # store to output
+    captions$qid_notes <- qid_notes
+
+    # other captions ----
+    # Now we store everything for output
+    captions$n_total <- paste0(
+      "Total survey responses (n = ",
+      dict_$value[dict_$name == "Total (n)"][1],
+      ")."
+    )
+
+    # alphabetical cap ----
     # If we have alphabet, add to captions.
     if(inherits(label_form, "character")){
       if(label_form == "alphabet"){
@@ -340,8 +337,7 @@ cdrs_plt_txt <- function(
 
         alpha_text <- paste0(cap_alpha$alpha_txt, collapse = ", ")
 
-        out$caption <- paste0(
-          out$caption,
+        captions$alpha <- paste0(
           "Factors: ",
           alpha_text
         )
@@ -349,8 +345,11 @@ cdrs_plt_txt <- function(
     }
   }
 
+  # Store captions to output list
+  out$captions <- captions
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # return
+  # return ----
   out
 }
 
@@ -358,16 +357,17 @@ cdrs_plt_txt <- function(
 #'
 #' Prepare DRS data for plotting.
 #'
-#' @param data_ the DRS data.
-#' @param cols_ a character vector of the columns of interest.
-#' @param dict_ the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
+#' @param data_ tibble. the DRS data.
+#' @param cols_ character. A vector of the columns of interest.
+#' @param dict_ tibble. the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
 #' @param remove_angle_brackets logical. Determines whether to erase angle brackets from <missingness> values.
 #' @param is_weighted logical.
-#' @param txt_options either NULL or a list providing parameters for `cdrs_plt_txt()`.
+#' @param txt_options list. Either `NULL` or a list providing parameters for `cdrs_plt_txt()`.
 #' @param sort_ logical. Sort variables/levels by magnitude of the mean.
 #' @param title_size numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.
+#' @param label_threshold numeric. The percent threshold by which we should stop displaying labels (in `geom_label`) for stacked bar plots. If no threshold is desired, enter `NULL`.
 #' @param param_file character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.
-#' @return object of class tibble, data set proportions.
+#' @return a list object, often named `prep_` in the \{cdrs\} package.
 #' @export
 cdrs_plt_prep <- function(
     data_,
@@ -378,6 +378,7 @@ cdrs_plt_prep <- function(
     txt_options = NULL,
     sort_ = TRUE,
     title_size = 14,
+    label_threshold = 10,
     param_file = system.file("extdata",
                              "plot_parameters.xlsx",
                              package = "cdrs")
@@ -415,9 +416,10 @@ cdrs_plt_prep <- function(
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Setup and Init of Output `List` ----
+  # Setup and Initialize Output Lists ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   out <- list()
+  captions <- list()
 
   # Add static elements
   out$title_size <- title_size
@@ -474,6 +476,7 @@ cdrs_plt_prep <- function(
                      "diverging",
                      "dichotomous",
                      "categorical")){
+
     data_ <- remove_angle_brackets(data_,
                                    cols_)
     dict_ <- remove_angle_brackets(dict_, cols_ = "value")
@@ -532,13 +535,17 @@ cdrs_plt_prep <- function(
   # For stacked plots, small values of label overlap, so drop them.
   # (This is performed in this function because we need to convert percent_lab
   # into a factor in the section 'Final cleanup')
-  if(out$type %in% c("ordinal", "diverging")){
+  if(out$type %in% c("ordinal", "diverging") &
+     !inherits(label_threshold, "NULL")){
     props_ <- props_ %>%
       dplyr::mutate(percent_lab = dplyr::case_when(
-        # drop labels <10%
-        percent < 10 ~ NA_character_,
+        # drop labels by a certain threshold (default: <10%)
+        percent < label_threshold ~ NA_character_,
         .default = percent_lab
       ))
+
+    # assign threshold to output.
+    out$label_threshold <- label_threshold
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~
@@ -640,6 +647,9 @@ cdrs_plt_prep <- function(
       )
     }
 
+    # By default, let's make sure the y-axis is visible.
+    out$yaxis <- TRUE
+
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Create `var_id` column ----
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -685,7 +695,6 @@ cdrs_plt_prep <- function(
           )
         }
 
-
         # now create var_id
         props_ <- props_ %>%
           dplyr::left_join(y = txt_$labels %>%
@@ -721,14 +730,33 @@ cdrs_plt_prep <- function(
       }
     } else {
       # When no 'labels' from cdrs_plt_txt provided,
-      # we want to wrap long text.
+      # we have one of two cases:
+      # 1) label_form is NULL.
+      # So we specify that we will have no y-axis text labels
+      # (ie. theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()))
+      # ...OR...
+      # 2) label_form is "default".
+      # So, for variables where we use levels,
+      # we want to make sure to wrap long text,
+      # but otherwise, we don't need to do anything
+      # (so we get labels as is, eg "Q1_1").
+
+      # if we assign txt_options...
+      if(!inherits(txt_options, "NULL")){
+        # and if we assign txt_options$label_form to be NULL,
+        # we want to make sure yaxis is turned off.
+        if(inherits(txt_options$label_form, "NULL")){
+          out$yaxis <- FALSE
+        }
+      }
 
       if(out$type %in% c("categorical")){
         props_ <- props_ %>%
           mutate(levels = stringr::str_wrap(levels,
-                                           width = axis_wrap) %>%
+                                            width = axis_wrap) %>%
                    forcats::as_factor())
       }
+
       # else if(out$type %in% c("dichotomous")){
       #   props_ <- props_ %>%
       #     mutate(variable = stringr::str_wrap(variable,
@@ -736,11 +764,11 @@ cdrs_plt_prep <- function(
       #              forcats::as_factor())
       # }
 
-
     }
 
-    props_$variable <- forcats::as_factor(props_$variable)
 
+    # convert `variable` to factor
+    props_$variable <- forcats::as_factor(props_$variable)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Set `props_` Factors ----
@@ -749,13 +777,23 @@ cdrs_plt_prep <- function(
     # `props_` before we finish it up.
     if(out$type %in% c("diverging")){
       # flip levels around
-      props_ <- props_ %>%
-        dplyr::group_by(variable) %>%
-        dplyr::mutate(levels = forcats::fct_rev(levels)) %>%
-        dplyr::mutate(percent_lab = forcats::as_factor(percent_lab)) %>%
-        dplyr::mutate(var_id = forcats::as_factor(var_id)) %>%
-        dplyr::arrange(variable, levels) %>%
-        dplyr::ungroup()
+      if("var_id" %in% names(props_)){
+        props_ <- props_ %>%
+          dplyr::group_by(variable) %>%
+          dplyr::mutate(levels = forcats::fct_rev(levels)) %>%
+          dplyr::mutate(percent_lab = forcats::as_factor(percent_lab)) %>%
+          dplyr::mutate(var_id = forcats::as_factor(var_id)) %>%
+          dplyr::arrange(variable, levels) %>%
+          dplyr::ungroup()
+      } else {
+        props_ <- props_ %>%
+          dplyr::group_by(variable) %>%
+          dplyr::mutate(levels = forcats::fct_rev(levels)) %>%
+          dplyr::mutate(percent_lab = forcats::as_factor(percent_lab)) %>%
+          # dplyr::mutate(var_id = forcats::as_factor(var_id)) %>%
+          dplyr::arrange(variable, levels) %>%
+          dplyr::ungroup()
+      }
     }
 
     if(out$type %in% c("ordinal", "diverging")){
@@ -779,13 +817,9 @@ cdrs_plt_prep <- function(
   # Final caption/title edit ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Let's note here if the data are unweighted.
-  if(
-    ("caption" %in% names(out)) &
-    !is_weighted
-  ){
-    out$caption <- paste0(
-      out$caption,
-      " The results depicted here are unweighted. As an unweighted summary, this graph only represents those surveyed and only serves to demonstrate who was sampled.")
+  if (("caption" %in% names(out)) &
+      !is_weighted) {
+    captions$wgt <- "The results depicted here are unweighted. This means that the depicted values have not be adjusted to proportionately represent all Delta residents."
   }
 
   if(
@@ -795,12 +829,43 @@ cdrs_plt_prep <- function(
     out$title <- paste0(out$title, " (Unweighted) ")
   }
 
+  # add captions back into `out`
+  if("captions" %in% names(txt_)){
+    out$captions <- append(
+      txt_$captions,
+      captions
+    )
+  } else {
+    out$captions <- captions
+  }
+
+  # Convert NA values in captions to NULL so that when paste0() is executed,
+  # these values are dropped.
+  out$captions <- purrr::map(
+    .x = out$captions,
+    .f = function(x){
+      if(NA %in% x){
+        NULL
+      } else {
+        x
+      }
+    })
+
+  # Remove NULL values from list of captions
+  out$captions <- out$captions[
+    purrr::map_lgl(.x = out$captions,
+                   .f = ~!is.null(.x))
+  ]
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Return ----
   out
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plotting Functions ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 #' Plot a pie chart with ggplot2.
 #'
 #' @param prep_ the tibble returned from `cdrs_plt_prep.`
@@ -842,10 +907,12 @@ cdrs_plt_pie <- function(
       position = ggplot2::position_stack(
         vjust = 0.5,
         reverse = TRUE),
-      label.padding = ggplot2::unit(0.15, "lines"),
+      # label.padding = ggplot2::unit(0.15, "lines"),
       fill = "#ffffff",
-      color = "#333333",
-      label.size = NA,
+      # color = "#333333",
+      size = prep_$title_size * 0.7,
+      label.size = 0,
+      size.unit = "pt",
       na.rm = T
       ) +
     # add colors
@@ -898,7 +965,7 @@ cdrs_plt_bar <- function(
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # adjust prep_$props with color palette
+  # add color palette to prep_$props
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   prep_ <- pal_main(
     prep_ = prep_
@@ -911,9 +978,12 @@ cdrs_plt_bar <- function(
     rev()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Determine which column in the "proportions" tibble should
-  # be the Y-axis variable. This can be displayed as a QID or
-  # a short piece of text (ie. `var_id`)
+  # Determine which column in the "proportions" (ie. prep_$props) tibble should
+  # be the Y-axis variable. This can be displayed as a QID,
+  # or a short piece of text (ie. `var_id).
+  # (It may also be missing entirely if prep_$yaxis is FALSE,
+  # but we still need to set the y variable column for the graph,
+  # even as we drop any text labels.)
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
@@ -926,6 +996,7 @@ cdrs_plt_bar <- function(
     y_ <- "variable"
   }
 
+  # create ggplot2 object
   plt_ <- ggplot2::ggplot(
     data = prep_$props,
     mapping = ggplot2::aes(
@@ -970,9 +1041,22 @@ cdrs_plt_stacked <- function(
     prep_
 ){
 
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Determine which column in the "proportions" (ie. prep_$props) tibble should
+  # be the Y-axis variable. This can be displayed as a QID,
+  # or a short piece of text (ie. `var_id).
+  # (It may also be missing entirely if prep_$yaxis is FALSE,
+  # but we still need to set the y variable column for the graph,
+  # even as we drop any text labels.)
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
+    warning(
+      paste0(
+        "In cdrs_plt_bar, the `variable` column was selected to be displayed.",
+        " Ideally, `var_id` should be selected."
+      )
+    )
     y_ <- "variable"
   }
 
@@ -985,12 +1069,25 @@ cdrs_plt_stacked <- function(
 
   # Set up data for geom_label()
   # (Note, the problem is placing the label correctly
-  # is actually quite difficult. This function determine where
-  # along the line between 1:100 or in our case 0:1 where a label
+  # is actually quite difficult. This function determines where
+  # along the line between 1:100 or in our case 0:1 a label
   # should exist.)
   prep_$props <- prep_$props %>%
     dplyr::group_by(!!rlang::sym(y_)) %>%
     mutate(pos = cumpos(mean)/100)
+
+  # Create a label for some legend items.
+  # This occurs when the in-graph labels have to be cut due to
+  # space. In such cases, where the label has been omitted,
+  # we want to add the percent to the legend instead.
+  prep_$props <- prep_$props %>%
+    dplyr::mutate(legend_lab = dplyr::case_when(
+                  percent < prep_$label_threshold ~ paste0(levels,
+                                                           " (",
+                                                           percent,
+                                                           "%)"),
+                  .default = levels)
+    )
 
   # Create plot.
   plt_ <- ggplot2::ggplot(
@@ -1006,7 +1103,8 @@ cdrs_plt_stacked <- function(
     ) +
     ggplot2::scale_fill_manual(
       values = plt_pal,
-      guide = ggplot2::guide_legend(reverse = TRUE)
+      # guide = ggplot2::guide_legend(reverse = TRUE),
+      labels = prep_$props$legend_lab
       ) +
     ggplot2::scale_x_continuous(
       breaks = c(0, 0.25, 0.5, 0.75, 1),
@@ -1021,7 +1119,8 @@ cdrs_plt_stacked <- function(
         x = pos,
         label = percent_lab
         ),
-      size = (prep_$title_size/4),
+      size = prep_$title_size * 0.7,
+      size.unit = "pt",
       label.padding = ggplot2::unit(0.15, "lines"),
       fill = "#ffffff",
       color = "#333333",
