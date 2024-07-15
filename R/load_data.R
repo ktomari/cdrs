@@ -359,13 +359,22 @@ cdrs_read <- function(
   col_order <- col_order %>%
     dplyr::left_join(r_class, by = c("vars" = "Variable"))
 
+  csv_file <- na.omit(fl$path[fl$type == "data"])
+
+  # error check: is it 1 file? is it a csv?
+  stopifnot(length(csv_file) == 1 &
+              grepl(pattern = "\\.csv*",
+                    x = csv_file,
+                    ignore.case = TRUE,
+                    perl = TRUE))
+
   # Now read data according to readr_type.
   # The argument supplied to col_types looks something like:
   # "ffffffffTffffcffff..." with each character representing a column type.
   data <- readr::read_csv(
-    file = fl$path[fl$type == "data"],
+    file = csv_file,
     col_types = paste0(col_order$readr_type,
-      collapse = ""
+                       collapse = ""
     )
   ) %>%
     # convert smart quotes to straight quotes.
