@@ -13,30 +13,33 @@ cdrs_plt_prep(
   txt_options = NULL,
   sort_ = TRUE,
   title_size = 14,
+  label_threshold = 10,
   param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
 }
 \arguments{
-\item{data_}{the DRS data.}
+\item{data_}{tibble. the DRS data.}
 
-\item{cols_}{a character vector of the columns of interest.}
+\item{cols_}{character. A vector of the columns of interest.}
 
-\item{dict_}{the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
+\item{dict_}{tibble. the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
 
 \item{remove_angle_brackets}{logical. Determines whether to erase angle brackets from \if{html}{\out{<missingness>}} values.}
 
 \item{is_weighted}{logical.}
 
-\item{txt_options}{either NULL or a list providing parameters for \code{cdrs_plt_txt()}.}
+\item{txt_options}{list. Either \code{NULL} or a list providing parameters for \code{cdrs_plt_txt()}.}
 
 \item{sort_}{logical. Sort variables/levels by magnitude of the mean.}
 
 \item{title_size}{numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.}
 
+\item{label_threshold}{numeric. The percent threshold by which we should stop displaying labels (in \code{geom_label}) for stacked bar plots. If no threshold is desired, enter \code{NULL}.}
+
 \item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
 }
 \value{
-object of class tibble, data set proportions.
+a list object, often named \code{prep_} in the \{cdrs\} package.
 }
 \description{
 Prepare DRS data for plotting.
