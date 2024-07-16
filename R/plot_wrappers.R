@@ -968,14 +968,13 @@ cdrs_plt_bar <- function(
   # add color palette to prep_$props
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   prep_ <- pal_main(
-    prep_ = prep_
+    prep_ = prep_,
+    reverse_ = TRUE
   )
 
   # extract palette
   plt_pal <- prep_$props$pal %>%
-    unique() %>%
-    # usually we want the color gradient to flip.
-    rev()
+    unique()
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Determine which column in the "proportions" (ie. prep_$props) tibble should
@@ -995,6 +994,23 @@ cdrs_plt_bar <- function(
     )
     y_ <- "variable"
   }
+
+  # Create in-graph labels.
+  prep_$props <- prep_$props %>%
+    # Create a label for high value labels, eg 81%
+    mutate(txt_hi = ifelse(percent > 80, paste0(percent, "%"), NA)) %>%
+    # and low value labels, eg 79%.
+    mutate(txt_lo = ifelse(percent <= 80, paste0(percent, "%"), NA))
+
+  prep_$props <- prep_$props %>%
+    # As `txt_hi` values will overlap bars in a barplot,
+    # we need to determine their color.
+    # TODO plot background awareness.
+    # Assumes plot background is white!
+    mutate(txt_color = dplyr::case_when(
+      !is.na(txt_hi) & dark_pal ~ "#ffffff",
+      .default = "#000000"
+    ))
 
   # create ggplot2 object
   plt_ <- ggplot2::ggplot(
@@ -1025,6 +1041,68 @@ cdrs_plt_bar <- function(
 
   plt_ <- plt_decorate(plt_ = plt_,
                        prep_ = prep_)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # add geom_text (percent floating on graph)
+
+  # approx. font size ratio.
+  max_char <- plt_ratio(prep_$title_size)
+
+  # size of label
+  # (Proportion this using plt_ratio because as title size increases,
+  # the graph proportionally decreases.)
+  label_size <- floor(max_char * .05)
+
+  # geom_text relative to top of bar (in units of percent).
+  prep_$props <- prep_$props %>%
+    dplyr::mutate(label_hjust = dplyr::case_when(
+      !is.na(txt_hi) ~ label_size * 1.8,
+      .default = label_size * 0.8
+    ))
+
+  # add geom_text
+  plt_ <- plt_ +
+  # Text label high
+    ggplot2::geom_text(
+      mapping = ggplot2::aes(
+        x = percent - label_hjust,
+        label = txt_hi,
+      ),
+      color = prep_$props$txt_color,
+      data = prep_$props,
+      size = label_size,
+      # position = ggplot2::position_dodge2(width = 0.5, reverse = TRUE),
+      na.rm = TRUE,
+      hjust = 0
+    ) +
+    # Text label low
+    ggplot2::geom_text(
+      mapping = ggplot2::aes(
+        x = percent + label_hjust,
+        label = txt_lo,
+      ),
+      color = prep_$props$txt_color,
+      data = prep_$props,
+      size = label_size,
+      # position = ggplot2::position_dodge2(width = 0.5, reverse = TRUE),
+      na.rm = TRUE,
+      hjust = 0
+    )
+    # ggplot2::geom_text(
+    #   mapping = ggplot2::aes(
+    #     x = .percent,
+    #     label = .txt_lo,
+    #     # group = Zone,
+    #     y = .txt_lo + label_vjust
+    #   ),
+    #   data = prep_$props,
+    #   size = label_size,
+    #   position = ggplot2::position_dodge2(
+    #     width = 0.5,
+    #     reverse = T
+    #   ),
+    #   na.rm = T
+    # )
 
   # return
   plt_

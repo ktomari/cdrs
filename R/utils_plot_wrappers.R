@@ -681,6 +681,49 @@ pal_mapper <- function(
   }
 }
 
+#' Determine whether a hex color is dark or light.
+#'
+#' @description
+#' Using ITU Rec. 709 coefficients, we can determine if a color is light or dark for HDTV and other digital screens.
+#'
+#' @details
+#' Caution, this implementation has not been verified to correctly determine luminosity. Moreover, this function has not been determined to be ADA compliant.
+#' @param colors character. A hexadecimal color.
+#' @return logical. Answers the question, "Is it dark?"
+#' @examples
+#' is_dark(c("#ffffff", "#8c8c8c", "#808080", "#737373", "#000000"))
+is_dark <- function(colors) {
+  purrr::map_lgl(
+    .x = colors,
+    .f = function(color){
+      # input validation ----
+      # ignore NULL and NA
+      if (is.null(color) || is.na(color)) {
+        return(NA)
+      }
+
+      # throw errors if input doesn't conform.
+      stopifnot(
+        # Is it a string?
+        inherits(color, "character") &
+          # Is the string the right length?
+          nchar(color) %in% c(4, 7) &
+          # Does the string begin with a hashtag?
+          T %in% grepl(pattern = "^\\#",
+                       x = color,
+                       perl = T)
+      )
+      # Convert Hex to RGB color
+      rgb <- grDevices::col2rgb(color) / 255 # normalized
+      # Coefficients derived from Rec. 709
+      # https://en.wikipedia.org/wiki/Rec._709#Luma_coefficients
+      luminance <- 0.2126 * rgb[1, ] + 0.7152 * rgb[2, ] + 0.0722 * rgb[3, ]
+      names(luminance) <- NULL
+      return(luminance < 0.5)  # Threshold for determining light or dark
+    }
+  )
+}
+
 #' Create a color palette.
 #'
 #' This function largely serves as a wraparound for different color palette functions.
@@ -696,7 +739,7 @@ pal_main <- function(
     reverse_ = FALSE,
     randomize_ = FALSE
 ){
-  # validation
+  # input validation ----
   stopifnot(inherits(prep_, "list"))
 
   stopifnot(all(c("props", "logic", "type") %in%
@@ -821,17 +864,20 @@ pal_main <- function(
   # rename 'factors' column to whatever varying_col is set to.
   names(pal_)[1] <- varying_col
 
-
   # Merge props and pal
   prep_$props <- prep_$props %>%
     dplyr::left_join(
       y = pal_,
       by = varying_col
-    )
+    ) %>%
+    # Determine darkness
+    dplyr::mutate(dark_pal = is_dark(pal))
 
   # return
   prep_
 }
+
+
 
 #' Convert ordinal scale columns to a numeric score.
 #'
