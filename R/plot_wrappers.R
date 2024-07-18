@@ -1258,8 +1258,11 @@ cdrs_plt_stacked <- function(
 #' objects from `cdrs_plt_prep`.
 #'
 #' @param data_ tibble. the DRS data.
-#' @param cols_ character. A vector of the columns of interest.
+#' @param col_ character. A vector of the columns of interest.
 #' @param dict_ tibble. the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
+#' @param txt_options list. Either `NULL` or a list providing parameters for `cdrs_plt_txt()`.
+#' @param title_size numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.
+#' @param param_file character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.
 #' @return ggplot2 object.
 cdrs_plt_hist <- function(
     data_,
