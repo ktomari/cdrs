@@ -103,7 +103,7 @@ cdrs_plt_txt <- function(
   # This section creates `labels_`
   if(!inherits(label_form, "NULL")){
 
-    if(label_form == "short"){
+    if(label_form %in% "short"){
       out$labels <- labs %>%
         dplyr::select(-short_title, -full_title) %>%
         dplyr::select(tidyselect::where(~!all(is.na(.))))
@@ -346,7 +346,7 @@ cdrs_plt_txt <- function(
   }
 
   # Store captions to output list
-  out$captions <- captions
+  out$captions <- captions[!is.na(captions)]
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # return ----
@@ -407,11 +407,13 @@ cdrs_plt_prep <- function(
   if(inherits(param_file, "data.frame")){
     stopifnot(
       names(param_file) %in% c("Variable",
-                             "short_title",
-                             "label",
-                             "short_label",
-                             "level",
-                             "short_level")
+                               "id",
+                               "full_title",
+                               "short_title",
+                               "label",
+                               "short_label",
+                               "level",
+                               "short_level")
     )
   }
 
@@ -426,7 +428,9 @@ cdrs_plt_prep <- function(
 
   # character limit before text wrap is performed.
   # TODO adjust to scale with changing font size.
+  # y-axis wrap limit
   axis_wrap <- 20
+  # legend wrap limit
   legend_wrap <- 20
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -503,12 +507,6 @@ cdrs_plt_prep <- function(
                                  col_ = .x
                                ))
     }
-  } else if(out$type == "numeric") {
-    stop(
-      stringr::str_glue(
-        "Issue: cdrs_plt_prep cannot handle '{out$type}' columns at this time."
-      )
-    )
   } else {
     stop(
       stringr::str_glue(
@@ -615,12 +613,13 @@ cdrs_plt_prep <- function(
         )
         )
     }
-  }
+  }  # End if(sort_)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Run cdrs_plt_txt ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Add descriptive details for plotting labels.
+  # Retrieve descriptive details for plotting labels.
+  # (Creates `txt_` object.)
   if(inherits(dict_, "data.frame")){
 
     if(inherits(txt_options, "NULL")){
@@ -647,6 +646,7 @@ cdrs_plt_prep <- function(
       )
     }
 
+    # Y-axis text labels.
     # By default, let's make sure the y-axis is visible.
     out$yaxis <- TRUE
 
@@ -654,7 +654,9 @@ cdrs_plt_prep <- function(
     # Create `var_id` column ----
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Create variable and level id's used in the labeling of plots.
-    if("labels" %in% names(txt_)){
+    if("labels" %in% names(txt_) &
+       out$type %in% c("dichotomous",
+                       "categorical")){
 
       # Letter-based label, eg. a), b), c), ...
       if("alphabet" %in% names(txt_$labels)){
@@ -675,9 +677,9 @@ cdrs_plt_prep <- function(
             dplyr::rename(lvl_id = alphabet) %>%
             dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
         }
-      }  # End if("alphabet" ...)
+      }  # END if("alphabet" ...)
 
-      # Pre-written short labels (from dictionary).
+      # Wrapping short LABELS (from dictionary).
       # See `cdrs_plt_txt` in this document for more details.
       if("short_label" %in% names(txt_$labels)){
         # determine first if we should str_wrap text
@@ -702,29 +704,34 @@ cdrs_plt_prep <- function(
                     by = c("variable" = "Variable")) %>%
           dplyr::rename(var_id = short_label) %>%
           dplyr::mutate(var_id = forcats::as_factor(var_id))
-      }
 
-      if("short_level" %in% names(txt_$labels)){
+      }  # END if("short_label"
+
+      # Wrapping short LEVELS (from dictionary).
+      if ("short_level" %in% names(txt_$labels)) {
         # determine first if we should str_wrap text
         should_wrap <- txt_$labels$short_level %>%
           unique() %>%
           purrr::map_vec(
             .x = .,
-            .f = ~stringr::str_length(.x) > legend_wrap)
+            .f = ~ stringr::str_length(.x) > legend_wrap
+            )
 
         should_wrap <- T %in% should_wrap
 
-        if(should_wrap){
+        if(should_wrap) {
           txt_$labels$short_level <- purrr::map_vec(
             .x = txt_$labels$short_level,
-            .f = ~stringr::str_wrap(.x, width = legend_wrap)
+            .f = ~ stringr::str_wrap(.x, width = legend_wrap)
           )
         }
 
         props_ <- props_ %>%
-          dplyr::left_join(y = txt_$labels %>%
-                             dplyr::select(level, short_level),
-                    by = c("levels" = "level")) %>%
+          dplyr::left_join(
+            y = txt_$labels %>%
+              dplyr::select(level, short_level),
+            by = c("levels" = "level")
+          ) %>%
           dplyr::rename(lvl_id = short_level) %>%
           dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
       }
@@ -742,15 +749,16 @@ cdrs_plt_prep <- function(
       # (so we get labels as is, eg "Q1_1").
 
       # if we assign txt_options...
-      if(!inherits(txt_options, "NULL")){
+      if (!inherits(txt_options, "NULL")) {
         # and if we assign txt_options$label_form to be NULL,
         # we want to make sure yaxis is turned off.
-        if(inherits(txt_options$label_form, "NULL")){
+        if (inherits(txt_options$label_form, "NULL")) {
           out$yaxis <- FALSE
         }
       }
 
-      if(out$type %in% c("categorical")){
+      # Wrap LEVELS for Categorical Variables
+      if(out$type %in% c("categorical")) {
         props_ <- props_ %>%
           mutate(levels = stringr::str_wrap(levels,
                                             width = axis_wrap) %>%
@@ -1238,6 +1246,223 @@ cdrs_plt_stacked <- function(
                                  1,  # b
                                  1), # l
                                'lines')
+    )
+
+  # return
+  plt_
+}
+
+#' Prepare and plot a histogram with ggplot2.
+#'
+#' Prepare and create a histogram. Unlike other plots, histograms do not take
+#' objects from `cdrs_plt_prep`.
+#'
+#' @param data_ tibble. the DRS data.
+#' @param cols_ character. A vector of the columns of interest.
+#' @param dict_ tibble. the data dictionary. If `NULL` no plot label decoration performed. In other words, the plot will not display textual descriptions.
+#' @return ggplot2 object.
+cdrs_plt_hist <- function(
+    data_,
+    col_,
+    dict_ = NULL,
+    txt_options = NULL,
+    title_size = 14,
+    param_file = system.file("extdata",
+                             "plot_parameters.xlsx",
+                             package = "cdrs")
+){
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Input validation ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  stopifnot(inherits(col_, "character") &
+              length(col_) > 0)
+
+  stopifnot(inherits(data_, "data.frame"))
+
+  stopifnot(inherits(dict_, "data.frame") |
+              inherits(dict_, "NULL"))
+
+  stopifnot(inherits(txt_options, "list") |
+              inherits(txt_options, "NULL"))
+
+  if(!inherits(txt_options, "NULL")){
+    if(!inherits(txt_options$label_form, "NULL")){
+      stopifnot(txt_options$label_form %in% c(
+        "short",
+        "default"
+      ))
+    }
+  }
+
+  stopifnot(inherits(title_size, "numeric"))
+
+  stopifnot(
+    inherits(param_file, "character") |
+      inherits(param_file, "data.frame")
+  )
+
+  if(inherits(param_file, "data.frame")){
+    stopifnot(
+      names(param_file) %in% c("Variable",
+                               "id",
+                               "full_title",
+                               "short_title",
+                               "label",
+                               "short_label",
+                               "level",
+                               "short_level")
+    )
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Setup ggplot data obj ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # create survey design object
+  design_ <- cdrs_design(
+    data_ = data_
+  )
+
+  # Create svyhist object to obtain more accurate estimates
+  # (compared to using ggplot2::aes(weight)).
+  # Note, we derive the svyhist object to access its attributes,
+  # and we place survey::svyhist() in this function to prevent
+  # the automatic plotting that occurs.
+  svyhist_obj <- svyhist.invisible(design_ = design_,
+                                   col_ = col_)
+
+  # Extract the breaks and counts
+  brks <- svyhist_obj$breaks
+  cnts <- svyhist_obj$counts
+
+  # Determine plot size
+  # Y (expand by 10%)
+  ymax <- round(max(cnts, na.rm = T) * 1.2)
+  # X (expand by one break size)
+  brk_size <- mean(diff(brks))
+  xmax <- brks[length(brks)] + brk_size
+
+  # Create a data frame for ggplot2
+  hist_tb <- tibble::tibble(
+    breaks = brks[-length(brks)],  # Exclude the last break
+    counts = cnts
+  ) %>%
+    dplyr::mutate(counts = round(counts)) %>%
+    dplyr::filter(counts != 0)
+
+  # Adjust the breaks to align with geom_bar
+  hist_tb$breaks_adj <- hist_tb$breaks +
+    (brk_size / 2)
+
+  # Plotting Setup ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ## Run cdrs_plt_txt ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Retrieve descriptive details for plotting labels.
+  # (Creates `txt_` object.)
+  if(inherits(dict_, "data.frame")){
+
+    if(inherits(txt_options, "NULL")){
+      txt_ <- cdrs_plt_txt(
+        dict_ = dict_,
+        cols_ = col_,
+        label_form = "short",
+        title_form = NULL,
+        subtitle_ = F,
+        caption_ = F,
+        param_file = param_file
+      )
+    } else {
+      # Before we run cdrs_plt_txt, we have to do some
+      # jerry-rigging because that function is not set up
+      # for numeric variables
+      # (largely because of missing information in dict)
+      default_label <- FALSE
+      if("label_form" %in% names(txt_options)){
+        if(txt_options$label_form == "default"){
+          txt_options$label_form <- "short"
+          default_label <- TRUE
+        }
+      }
+
+      txt_ <- do.call(
+        what = cdrs_plt_txt,
+        args = c(
+          list(
+            dict_ = dict_,
+            cols_ = col_,
+            param_file = param_file
+          ),
+          txt_options
+        )
+      )
+    }
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Plot ----
+  # Create the ggplot2 histogram
+  plt_ <- ggplot2::ggplot(
+    data = hist_tb,
+    mapping = ggplot2::aes(x = breaks_adj,
+                           y = counts)) +
+    ggplot2::geom_bar(stat = "identity",
+                      # TODO add custom colors using plot_parameters.xlsx
+                      fill = "#009E73",
+                      alpha = 1,
+                      width = brk_size) +
+    ggplot2::geom_text(
+      mapping = ggplot2::aes(
+        label = round(counts, 1)),
+      vjust = -0.5) +
+    ggplot2::scale_x_continuous(
+      limits = c(0, xmax),
+      breaks = seq(0, xmax, by = brk_size),
+      expand = c(0, 0)) +
+    ggplot2::scale_y_continuous(
+      limits = c(0, ymax),
+      expand = c(0, 0)
+    ) +
+    ggplot2::labs(
+      x = {
+        if(default_label){
+          # eg. Years in the Delta
+          txt_$labels$label
+        } else if(inherits(txt_options, "NULL")){
+          # eg. (blank)
+          NULL
+        } else {
+          # eg. Years
+          txt_$labels$short_label
+        }
+      },
+      y = "Count",
+      title = {
+        if("title" %in% names(txt_)){
+          txt_$title
+        } else {
+          NULL
+        }
+      }) +
+    ggplot2::theme_bw()
+
+  plt_ <- plt_decorate(
+    plt_ = plt_,
+    prep_ = list(
+      title_size = title_size,
+      type = "numeric",
+      title = txt_$title,
+      subtitle = txt_$subtitle,
+      captions = txt_$captions,
+      yaxis = TRUE
+    )
+  )
+
+  # remove vertical lines
+  plt_ <- plt_ +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_blank(),
+      panel.grid.minor.x = ggplot2::element_blank()
     )
 
   # return
