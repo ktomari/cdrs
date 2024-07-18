@@ -228,6 +228,30 @@ plt_logic <- function(
   logic_
 }
 
+#' @title Extract attributes from svyhist.
+#'
+#' @description
+#' Normally, the survey::svyhist function not only returns a complex R object with attributes, but it also automatically generates a plot. This function isolates and prevents plotting from occurring.
+#'
+#' @param design_ svydesign object.
+#' @param col_ character. The column name of the continuous variable.
+#' @return svyhist object.
+#' @noRd
+svyhist.invisible <- function(
+    design_,
+    col_
+){
+  pdf(file=NULL)
+  # create svyhist object.
+  svyhist_obj <- survey::svyhist(
+    formula = stats::as.formula(paste0("~", col_)),
+    design = design_
+  )
+  dev.off()
+  # return
+  svyhist_obj
+}
+
 #' Load palette options.
 #'
 #' @param file_ path to file.
@@ -297,7 +321,12 @@ plt_decorate <- function(
               prep_$title,
               width = floor((max_char) * .8)
             )
-          } else {
+          } else if(prep_$type %in% "numeric") {
+            stringr::str_wrap(
+              prep_$title,
+              width = floor((max_char) * .7)
+            )
+          }else {
             stringr::str_wrap(
               prep_$title,
               width = max_char
@@ -312,6 +341,9 @@ plt_decorate <- function(
           if(prep_$type == "categorical"){
             stringr::str_wrap(prep_$subtitle,
                               width = max_char/.9)
+          } else if(prep_$type == "numeric") {
+            stringr::str_wrap(prep_$subtitle,
+                              width = max_char/1.2)
           } else {
             stringr::str_wrap(prep_$subtitle,
                               width = max_char * .8)
@@ -324,7 +356,8 @@ plt_decorate <- function(
         if("captions" %in% items_){
           if(prep_$type %in% c("dichotomous",
                                "ordinal",
-                               "categorical")){
+                               "categorical",
+                               "numeric")){
             stringr::str_wrap(
               paste0(prep_$captions, collapse = " "),
               width = floor((max_char/.7) * .5)
@@ -417,7 +450,7 @@ plt_decorate <- function(
       )
   }
   # TODO as of this writing, there is no way to omit the legend
-  # in categorical plots, which would be the analog to prep_$yaxis == F.
+  # in categorical plots, which might be the analog to prep_$yaxis == F.
 
   # theme ----
   plt_ <- plt_ +
