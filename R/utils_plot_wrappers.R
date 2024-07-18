@@ -723,8 +723,6 @@ pal_mapper <- function(
 #' Caution, this implementation has not been verified to correctly determine luminosity. Moreover, this function has not been determined to be ADA compliant.
 #' @param colors character. A hexadecimal color.
 #' @return logical. Answers the question, "Is it dark?"
-#' @examples
-#' is_dark(c("#ffffff", "#8c8c8c", "#808080", "#737373", "#000000"))
 is_dark <- function(colors) {
   purrr::map_lgl(
     .x = colors,
