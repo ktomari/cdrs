@@ -228,28 +228,309 @@ plt_logic <- function(
   logic_
 }
 
-#' @title Extract attributes from svyhist.
+#' @title Enrich proportions
 #'
 #' @description
-#' Normally, the survey::svyhist function not only returns a complex R object with attributes, but it also automatically generates a plot. This function isolates and prevents plotting from occurring.
+#' Helper function for `cdrs_plt_prep` to enrich proportions tibble. This is placed here to improve code organization and readability
+#' @param prep_ list.
 #'
-#' @param design_ svydesign object.
-#' @param col_ character. The column name of the continuous variable.
-#' @return svyhist object.
 #' @noRd
-svyhist.invisible <- function(
-    design_,
-    col_
+enrich_props <- function(
+    prep_
 ){
-  pdf(file=NULL)
-  # create svyhist object.
-  svyhist_obj <- survey::svyhist(
-    formula = stats::as.formula(paste0("~", col_)),
-    design = design_
-  )
-  dev.off()
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Add Encoding ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # add encoding column into props (used in pal_maker)
+  prep_$props <- prep_$props %>%
+    dplyr::left_join(
+      # subset the dict before joining.
+      y = prep_$dict %>%
+        dplyr::filter(name == "factors") %>%
+        dplyr::select(Variable, value, encoding),
+      by = c("variable" = "Variable", "levels" = "value"))
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Type-specific Label Fixes ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Small ordinal labels
+  # ~~~~~~~~~~~~~~~~~~~~~
+  # For stacked plots, small values of label overlap, so drop them.
+  # (This is performed in this function because we need to convert percent_lab
+  # into a factor in the section 'Final cleanup')
+  if(prep_$type %in% c("ordinal", "diverging") &
+     !inherits(prep_$label_threshold, "NULL")){
+
+    prep_$props <- prep_$props %>%
+      dplyr::mutate(percent_lab = dplyr::case_when(
+        # drop labels by a certain threshold (default: <10%)
+        percent < prep_$label_threshold ~ NA_character_,
+        .default = percent_lab
+      ))
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~
+  # Filter out 'No' level in dichotomous types
+  # ~~~~~~~~~~~~~~~~~~~~~
+  # Usually, we only want "Yes" for dichotomous questions for bar plots,
+  # so this is the use case.
+  if(prep_$type == "dichotomous"){
+
+    # get affirmative level
+    level_ <- prep_$logic$affirmative_level %>%
+      unique()
+
+    # validation
+    stopifnot(length(level_) == 1)
+
+    # filter affirmative level only
+    prep_$props <- prep_$props %>%
+      dplyr::filter(levels %in% level_) %>%
+      dplyr::mutate(levels = forcats::fct_drop(levels))
+
+    # Remove unused levels from dictionary.
+    prep_$dict <- prep_$dict %>%
+      dplyr::filter(Variable %in% prep_$cols) %>%
+      dplyr::mutate(levels_filter = dplyr::case_when(
+        name == "factors" & value == level_ ~ T,
+        name != "factors" ~ T,
+        .default = F
+      )) %>%
+      dplyr::filter(levels_filter) %>%
+      dplyr::select(-levels_filter)
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Special sorting adjustment.
+  # Force `sort_` to be FALSE if ordinal,
+  # and there's only one variable.
+  # (Note, in cases where there are two ordinal variables,
+  # what is sorted is not the levels, but the variables themselves.
+  # And where there is only one variable that is "categorical",
+  # the levels do get sorted.)
+  if(prep_$type %in% c("ordinal", "diverging") &
+     length(unique(prep_$logic$Variable)) == 1){
+    prep_$sort <- FALSE
+  }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Sort ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Do we want to arrange levels/variables by size?
+  if(prep_$sort){
+    if(prep_$type %in% c("dichotomous",
+                         "ordinal",
+                         "diverging")){
+
+      prep_$props <- prep_$props %>%
+        tidyr::nest(.by = variable,
+                    .key = "nested") %>%
+        dplyr::mutate(max_val = purrr::map_vec(
+          nested,
+          function(tb){
+            levels_ <- levels(tb$levels)
+
+            lvl_ <- levels_[1]
+            # return
+            tb$mean[tb$levels==lvl_]
+
+          })) %>%
+        dplyr::arrange(max_val) %>%
+        dplyr::select(-max_val) %>%
+        tidyr::unnest("nested") %>%
+        dplyr::mutate(variable = forcats::as_factor(variable))
+
+    } else if(prep_$type %in% c("categorical")) {
+      prep_$props <- prep_$props %>%
+        dplyr::arrange(mean) %>%
+        dplyr::mutate(levels = forcats::as_factor(
+          as.character(
+            levels)
+        )
+        )
+    }
+  }  # End if(sort_)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # plt_txt incorporation ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if("plt_txt" %in% names(prep_)){
+
+    # Create `var_id` column
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Create variable and level id's used in the labeling of plots.
+    if("labels" %in% names(prep_$plt_txt) &
+       prep_$type %in% c("dichotomous",
+                         "categorical")){
+
+      # Letter-based label, eg. a), b), c), ...
+      if("alphabet" %in% names(prep_$plt_txt$labels)){
+
+        if(prep_$type %in% c("dichotomous")){
+          prep_$props <- prep_$props %>%
+            dplyr::left_join(y = prep_$plt_txt$labels %>%
+                               dplyr::select(Variable, alphabet),
+                             by = c("variable" = "Variable")) %>%
+            dplyr::rename(var_id = alphabet) %>%
+            dplyr::mutate(var_id = forcats::as_factor(var_id))
+
+        } else if(prep_$type %in% c("categorical")) {
+          prep_$props <- prep_$props %>%
+            dplyr::left_join(y = prep_$plt_txt$labels %>%
+                               dplyr::select(level, alphabet),
+                             by = c("levels" = "level")) %>%
+            dplyr::rename(lvl_id = alphabet) %>%
+            dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
+        }
+      }  # END if("alphabet" ...)
+
+      # Wrapping short LABELS (from dictionary).
+      # See `cdrs_plt_txt` in this document for more details.
+      if("text_label" %in% names(prep_$plt_txt$labels)){
+        # determine first if we should str_wrap text
+        # Note, remember:
+        # prep_ is a list,
+        # plt_txt is a list,
+        # labels is a tibble,
+        # text_label is column
+        should_wrap <- prep_$plt_txt$labels$text_label %>%
+          unique() %>%
+          purrr::map_vec(.,
+                         ~stringr::str_length(.x) > prep_$axis_wrap)
+
+        should_wrap <- T %in% should_wrap
+
+        if(should_wrap){
+          prep_$plt_txt$labels$text_label <- purrr::map_vec(
+            .x = prep_$plt_txt$labels$text_label,
+            .f = ~stringr::str_wrap(.x, width = prep_$axis_wrap)
+          )
+        }
+
+        # now create var_id
+        prep_$props <- prep_$props %>%
+          dplyr::left_join(y = prep_$plt_txt$labels %>%
+                             dplyr::select(Variable, text_label),
+                           by = c("variable" = "Variable")) %>%
+          dplyr::rename(var_id = text_label) %>%
+          dplyr::mutate(var_id = forcats::as_factor(var_id))
+
+      }  # END if("text_label"
+
+      # Wrapping short LEVELS (from dictionary).
+      if ("short_level" %in% names(prep_$plt_txt$labels)) {
+        # determine first if we should str_wrap text
+        should_wrap <- prep_$plt_txt$labels$short_level %>%
+          unique() %>%
+          purrr::map_vec(
+            .x = .,
+            .f = ~ stringr::str_length(.x) > prep_$legend_wrap
+          )
+
+        should_wrap <- T %in% should_wrap
+
+        if(should_wrap) {
+          prep_$plt_txt$labels$short_level <- purrr::map_vec(
+            .x = prep_$plt_txt$labels$short_level,
+            .f = ~ stringr::str_wrap(.x, width = prep_$legend_wrap)
+          )
+        }
+
+        prep_$props <- prep_$props %>%
+          dplyr::left_join(
+            y = prep_$plt_txt$labels %>%
+              dplyr::select(level, short_level),
+            by = c("levels" = "level")
+          ) %>%
+          dplyr::rename(lvl_id = short_level) %>%
+          dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
+      }
+    } else {
+      # When no 'labels' from cdrs_plt_txt provided,
+      # we have one of two cases:
+      # 1) label_form is NULL.
+      # So we specify that we will have no y-axis text labels
+      # (ie. theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()))
+      # ...OR...
+      # 2) label_form is "default".
+      # So, for variables where we use levels,
+      # we want to make sure to wrap long text,
+      # but otherwise, we don't need to do anything
+      # (so we get labels as is, eg "Q1_1").
+
+      # if we assign txt_options...
+      if (!inherits(prep_$txt_options, "NULL")) {
+        # and if we assign txt_options$label_form to be NULL,
+        # we want to make sure yaxis is turned off.
+        if (inherits(prep_$txt_options$label_form, "NULL")) {
+          prep_$yaxis <- FALSE
+        }
+      }
+
+      # Wrap LEVELS for Categorical Variables
+      if(prep_$type %in% c("categorical")) {
+        prep_$props <- prep_$props %>%
+          mutate(levels = stringr::str_wrap(levels,
+                                            width = prep_$axis_wrap) %>%
+                   forcats::as_factor())
+      }
+
+      # else if(prep_$type %in% c("dichotomous")){
+      #   props_ <- props_ %>%
+      #     mutate(variable = stringr::str_wrap(variable,
+      #                                         width = axis_wrap) %>%
+      #              forcats::as_factor())
+      # }
+
+    }
+
+    # add captions back into `prep_`
+    if("captions" %in% names(prep_$plt_txt)){
+      prep_$captions <- append(
+        prep_$captions,
+        prep_$plt_txt$caption
+      )
+    }
+  }  # END if("plt_txt" %in% names(prep_)){
+
+  # convert `variable` to factor
+  prep_$props$variable <- forcats::as_factor(prep_$props$variable)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Set `prep_$props` Factors ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # We perform a few `as_factor` and other factor-related operations on
+  # `props_` before we finish it up.
+  if(prep_$type %in% c("diverging")){
+    # flip levels around
+    if("var_id" %in% names(prep_$props)){
+      prep_$props <- prep_$props %>%
+        dplyr::group_by(variable) %>%
+        dplyr::mutate(levels = forcats::fct_rev(levels)) %>%
+        dplyr::mutate(percent_lab = forcats::as_factor(percent_lab)) %>%
+        dplyr::mutate(var_id = forcats::as_factor(var_id)) %>%
+        dplyr::arrange(variable, levels) %>%
+        dplyr::ungroup()
+    } else {
+      prep_$props <- prep_$props %>%
+        dplyr::group_by(variable) %>%
+        dplyr::mutate(levels = forcats::fct_rev(levels)) %>%
+        dplyr::mutate(percent_lab = forcats::as_factor(percent_lab)) %>%
+        # dplyr::mutate(var_id = forcats::as_factor(var_id)) %>%
+        dplyr::arrange(variable, levels) %>%
+        dplyr::ungroup()
+    }
+  }
+
+  # Create a percent label for ordinal vars.
+  if(prep_$type %in% c("ordinal", "diverging")){
+    prep_$props <- prep_$props %>%
+      dplyr::mutate(percent_lab = forcats::as_factor(
+        as.character(percent_lab)))
+  }
+
   # return
-  svyhist_obj
+  prep_
 }
 
 #' Load palette options.
@@ -368,7 +649,6 @@ plt_decorate <- function(
               width = max_char/.7
             )
           }
-
         } else {
           NULL
         }
@@ -462,9 +742,20 @@ plt_decorate <- function(
         l = prep_$title_size,
         unit = "pt")
     )
-
   # legend spacing ----
-  if(prep_$type %in% c("ordinal")){
+  if(prep_$type %in% c("ordinal", "diverging")){
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Determine how many rows for legend.
+    # First, get num of factors.
+    nfct <- prep_$props$levels %>%
+      unique() %>%
+      droplevels() %>%
+      length()
+
+    legend_nrow <- ceiling(nfct/4)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     plt_ <- plt_ +
       ggplot2::theme(
         legend.spacing.y = grid::unit(prep_$title_size * 0.7, "pt"),
@@ -474,6 +765,7 @@ plt_decorate <- function(
       ) +
       ggplot2::guides(fill = ggplot2::guide_legend(
         byrow = TRUE,
+        nrow = legend_nrow,
         reverse = TRUE,
         override.aes = list(
           color = "#333333", # Black stroke
@@ -538,6 +830,39 @@ cumpos <- function(x){
   }
   # return vector
   100 - tmp
+}
+
+#' @title Filters NA/NULL values out of the 'captions' list.
+#'
+#' @description
+#' Filter out NA/NULL values from the 'captions' list in `cdrs_plt_prep`.
+#'
+#' @param captions_ list. A list with each named element composed of a character, NA, or NULL.
+#' @return list.
+plt_filter_caps <- function(
+    captions_
+){
+  # Input validation
+  stopifnot(inherits(captions_, "list"))
+
+  # Convert NA values in captions to NULL
+  captions_ <- purrr::map(
+    .x = captions_,
+    .f = function(x){
+      if(NA %in% x){
+        NULL
+      } else {
+        x
+      }
+    })
+
+  # Remove NULL values from list of captions
+  captions_ <- captions_[
+    purrr::map_lgl(.x = captions_,
+                   .f = ~!is.null(.x))
+  ]
+
+  captions_
 }
 
 #' A function that executes a palette function.
