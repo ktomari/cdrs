@@ -19,7 +19,7 @@ cdrs_plt_txt(
 
 \item{cols_}{character. variable/column names of the DRS data.}
 
-\item{label_form}{character. Options include "short", "alphabet", "default", and \code{NULL}. These labels correspond to the table created by \code{plt_labels()}. If "short", either the variable \code{short_label} or \code{short_lvl} is drawn from the labels table and table for recoding factors accordingly is returned. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If either "qid" or \code{NULL} no table is returned because the y-axis label will either remain the default (eg. Q1_0, Q1_1, etc), or it will be axis.text element blank (ie. there will be no label).}
+\item{label_form}{character. Options include "short", "alphabet", "default", "qid", and \code{NULL}. These labels correspond to the table created by \code{plt_labels()}. If "short", either the variable \code{short_label} or \code{short_lvl} is drawn from the labels table and a table for recoding factors is returned accordingly. If "alphabet", a table of for recoding factors aligned with alphabetical characters is returned. If "default", a table with the full labels as they appear in the survey is returned. If "qid", then a table with qid labels (eg. Q1_0) is returned. If \code{NULL}, no table is returned because the y-axis label will be blank.}
 
 \item{title_form}{character. Options include "short", "long" or \code{NULL}. If "short" the \code{short_title} is retrieved from the labels table (see \code{plt_labels()}), If "long", the Label value is retrieved from \code{dict_}. If \code{NULL}, nothing is returned.}
 

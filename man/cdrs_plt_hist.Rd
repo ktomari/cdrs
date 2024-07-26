@@ -4,32 +4,14 @@
 \alias{cdrs_plt_hist}
 \title{Prepare and plot a histogram with ggplot2.}
 \usage{
-cdrs_plt_hist(
-  data_,
-  col_,
-  dict_ = NULL,
-  txt_options = NULL,
-  title_size = 14,
-  param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
-)
+cdrs_plt_hist(prep_)
 }
 \arguments{
-\item{data_}{tibble. the DRS data.}
-
-\item{col_}{character. A vector of the columns of interest.}
-
-\item{dict_}{tibble. the data dictionary. If \code{NULL} no plot label decoration performed. In other words, the plot will not display textual descriptions.}
-
-\item{txt_options}{list. Either \code{NULL} or a list providing parameters for \code{cdrs_plt_txt()}.}
-
-\item{title_size}{numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.}
-
-\item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
+\item{prep_}{list. An object returned by \code{cdrs_plt_prep}.}
 }
 \value{
 ggplot2 object.
 }
 \description{
-Prepare and create a histogram. Unlike other plots, histograms do not take
-objects from \code{cdrs_plt_prep}.
+Creates a ggplot2 histogram with sample-weighted data ultimately dervied from \code{survey::svyhist}.
 }
