@@ -1148,7 +1148,7 @@ cdrs_plt_stacked <- function(
   # if yaxis if FALSE, we don't want anything displayed
   if(!prep_$yaxis){
     plt_ <- plt_ +
-      theme(axis.text.y = ggplot2::element_blank())
+      ggplot2::theme(axis.text.y = ggplot2::element_blank())
   }
 
   # return
