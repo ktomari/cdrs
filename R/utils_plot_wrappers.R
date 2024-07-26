@@ -274,6 +274,7 @@ plt_txt_wrap <- function(
 #' This helper function is used in `cdrs::enrich_props` in numerous places to do the simple task of taking the `plt_txt$lab_df` (labels table) and joining it to the `props` (proportions table).
 #' @param props tibble. Proportions derived originally from `cdrs::cdrs_props`.
 #' @param lab_df tibble. Labels derived originallyf rom `cdrs::cdrs_plt_txt`.
+#' @param by_vec character. A named character vector by which the join is performed.
 #' @param lab_col character. Name of the column being joined.
 #' @param fct_col character. Name of the column being created and converted to a class factor variable.
 #' @return proportions tibble.
@@ -282,12 +283,15 @@ plt_txt_wrap <- function(
 plt_join_and_factor <- function(
     props,
     lab_df,
+    by_vec = c("variable" = "Variable"),
     lab_col,
     fct_col
 ){
   # Input validation
   stopifnot(inherits(props, "data.frame"))
   stopifnot(inherits(lab_df, "data.frame"))
+  stopifnot(inherits(by_vec, "character"))
+  stopifnot(rlang::is_named(by_vec))
   stopifnot(inherits(lab_col, "character"))
   stopifnot(inherits(fct_col, "character"))
 
@@ -296,8 +300,10 @@ plt_join_and_factor <- function(
   props %>%
     # Join selection of labels table: Variable and "lab_col"
     dplyr::left_join(y = lab_df %>%
-                       dplyr::select(Variable, lab_col),
-                     by = c("variable" = "Variable")) %>%
+                       dplyr::select(
+                         tidyselect::all_of(unname(by_vec)),
+                         lab_col),
+                     by = by_vec) %>%
     # Rename "lab_col"
     dplyr::rename(!!rlang::sym(fct_col) := lab_col) %>%
     # Convert "fct_col" to factor
@@ -457,6 +463,7 @@ enrich_props <- function(
           prep_$props <- plt_join_and_factor(
             props = prep_$props,
             lab_df = prep_$plt_txt$lab_df,
+            by_vec = c("levels" = "level"),
             lab_col = "alphabet",
             fct_col = "lvl_id"
           )
@@ -509,6 +516,7 @@ enrich_props <- function(
         prep_$props <- plt_join_and_factor(
           props = prep_$props,
           lab_df = prep_$plt_txt$lab_df,
+          by_vec = c("levels" = "level"),
           lab_col = "short_level",
           fct_col = "lvl_id"
         )
