@@ -728,6 +728,7 @@ cdrs_plt_prep <- function(
 #' Plot a pie chart with ggplot2.
 #'
 #' @param prep_ the tibble returned from `cdrs_plt_prep.`
+#' @importFrom rlang !!
 #' @return an object of class ggplot.
 #' @export
 cdrs_plt_pie <- function(
@@ -1005,6 +1006,7 @@ cdrs_plt_bar <- function(
 #' Creates stacked bar plot which shows all levels of a variable. Used for both qualitative and likert scale responses.
 #'
 #' @param prep_ the tibble returned from `cdrs_plt_prep.`
+#' @importFrom rlang !!
 #' @return an object of class ggplot.
 #' @export
 cdrs_plt_stacked <- function(

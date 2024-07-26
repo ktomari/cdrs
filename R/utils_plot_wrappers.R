@@ -58,6 +58,7 @@ qual_pal <- function(n_fct, seed = NA){
 #'
 #' @param data_ full data set.
 #' @param col_ column name (as a character)
+#' @importFrom rlang !!
 #' @return tibble of unweighted proportions.
 #'
 #' @examples
@@ -276,6 +277,7 @@ plt_txt_wrap <- function(
 #' @param lab_col character. Name of the column being joined.
 #' @param fct_col character. Name of the column being created and converted to a class factor variable.
 #' @return proportions tibble.
+#' @importFrom rlang !!
 #' @noRd
 plt_join_and_factor <- function(
     props,
@@ -297,9 +299,9 @@ plt_join_and_factor <- function(
                        dplyr::select(Variable, lab_col),
                      by = c("variable" = "Variable")) %>%
     # Rename "lab_col"
-    dplyr::rename(!!sym(fct_col) := lab_col) %>%
+    dplyr::rename(!!rlang::sym(fct_col) := lab_col) %>%
     # Convert "fct_col" to factor
-    dplyr::mutate(!!sym(fct_col) := forcats::as_factor(!!sym(fct_col)))
+    dplyr::mutate(!!rlang::sym(fct_col) := forcats::as_factor(!!rlang::sym(fct_col)))
 }
 
 #' @title Enrich proportions
@@ -1356,6 +1358,7 @@ pal_main <- function(
 #' @param reverse_ logical. If we should reverse the levels. By default, the order of factor levels is not reversed because the input factors do not align with the output factors, which *may* cause confusion.
 #' @param zero_start logical. If we should have the first level be worth 0 or 1. In most cases of ordinal scale factors where the lowest level is something akin to "none", 0 is preferrable.
 #' @param convert_missing logical. Convert missingness variables to `NA`.
+#' @importFrom rlang !!
 #' @return a tibble (the data).
 ranked_to_num <- function(
     data_,
