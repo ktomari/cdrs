@@ -1,5 +1,21 @@
 # cdrs 0.3.0
 
+There are considerable changes since 0.2.1, but much of it is under the hood. Here are some of the important changes in key features of the cdrs package:
+
+1. Numeric variables are now supported in `cdrs_plt_prep` and concomitantly, you may now create histograms.
+2. Major bugs with `cdrs_plt_prep`, especially for ordinal variables, have been fixed.
+3. Improved text size adjustments using `title_size`.
+4. Captions are now accessible as a named list, making manipulation of captions easier. (These adjustments should follow `cdrs_plt_prep`.) This ultimately facilitates an easier presentation of captions in \{shinycdrs\}.
+
+Major organizational changes:
+
+1. As `cdrs_plt_prep` became large and unwieldy, much of the code that tweaks the `props` (proportions tables derived from `survey::svymean`) has been transfered to utility/helper function `enrich_props`, which additionally has a number of its own helper functions.
+
+Proposed future changes:
+
+1. More complex plots that integrate an additional factor variable (eg. responses to Q1 by Zone).
+2. A conceptual shift in how crosstabs are displayed. We expect to see row and column sums differently than how they are presented at this moment. (Essentially using `addmargins()` to the output of `svytable()`.) Expect to see this change in an upcoming patch (0.3.X). 
+
 # cdrs 0.2.1
 
 # cdrs 0.2.0
