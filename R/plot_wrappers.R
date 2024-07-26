@@ -1011,7 +1011,6 @@ cdrs_plt_stacked <- function(
     prep_
 ){
 
-  browser()
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Determine which column in the "proportions" (ie. prep_$props) tibble should
   # be the Y-axis variable. This can be displayed as a QID,
@@ -1031,6 +1030,14 @@ cdrs_plt_stacked <- function(
       )
     )
     y_ <- "variable"
+  }
+
+  # Currently, there is no support for combining plots, and hence
+  # there is no support for "alphabetical" labels.
+  # Therefore, we'll nullify the y-axis text.
+  if("alphabet" %in% prep_$txt_options$label_form){
+    prep_$yaxis <- FALSE
+    warning("At this time, label_form == 'alphabet' is not supported by cdrs_plt_stacked")
   }
 
   prep_ <- pal_main(
@@ -1063,6 +1070,7 @@ cdrs_plt_stacked <- function(
     )
 
   # Create plot.
+
   plt_ <- ggplot2::ggplot(
     data = prep_$props,
     mapping = ggplot2::aes(
@@ -1101,8 +1109,8 @@ cdrs_plt_stacked <- function(
       na.rm = T,
       show.legend = F
     ) +
-    ggplot2::labs(x = "",
-                  y = "") +
+    ggplot2::labs(x = NULL,
+                  y = NULL) +
     ggplot2::theme_bw()
 
   # add title, subtitle, caption, etc.
@@ -1134,6 +1142,12 @@ cdrs_plt_stacked <- function(
                                  1), # l
                                'lines')
     )
+
+  # if yaxis if FALSE, we don't want anything displayed
+  if(!prep_$yaxis){
+    plt_ <- plt_ +
+      theme(axis.text.y = ggplot2::element_blank())
+  }
 
   # return
   plt_

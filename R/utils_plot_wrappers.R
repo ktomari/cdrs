@@ -402,7 +402,7 @@ enrich_props <- function(
                          "categorical")){
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ## Labels ----
+      ## Dichot/Cat Labels ----
       # Letter-based label, eg. a), b), c), ...
       if("alphabet" %in% names(prep_$plt_txt$lab_df)){
 
@@ -456,7 +456,7 @@ enrich_props <- function(
       }
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      # Levels ----
+      # Dichot/Cat Levels ----
       if ("short_level" %in% names(prep_$plt_txt$lab_df)) {
         # Wrapping short_level text.
         prep_$plt_txt$lab_df <- plt_txt_wrap(
@@ -474,6 +474,37 @@ enrich_props <- function(
           dplyr::rename(lvl_id = short_level) %>%
           dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
       }
+    } else if("lab_df" %in% names(prep_$plt_txt) &
+              prep_$type %in% c("diverging", "ordinal")) {
+      ## Ordinal/Div Labels ----
+
+      # What should we fill var_id with?
+      if(prep_$txt_options$label_form %in% c("short") &
+         "short_label" %in% colnames(prep_$plt_txt$lab_df)){
+
+        # set var_id to short label
+        prep_$props$var_id <- prep_$plt_txt$lab_df$short_label
+
+      } else if(prep_$txt_options$label_form %in% c("default") &
+                "label" %in% colnames(prep_$plt_txt$lab_df)){
+
+        # set var_id to label
+        prep_$props$var_id <- prep_$plt_txt$lab_df$label
+
+      } else if(!inherits(prep_$txt_options$label_form, "qid")){
+        # Basically, lab_df doesn't have a `short_label` or `label`,
+        # and the label_form is not equal to "qid", it means that
+        # we don't want to show any label.
+        # Case 1: label_form is NULL
+        # Case 2: label_form is "short" & there is no `short_label`
+        # Case 3. label_form is "default" & there is no `label`
+        # turn off label on y-axis
+        prep_$yaxis <- FALSE
+      }
+
+      # Note, if label_form == "qid", we leave as is.
+
+
     } else {
       # When no 'labels' from cdrs_plt_txt provided,
       # we have one of two cases:
@@ -496,21 +527,6 @@ enrich_props <- function(
           prep_$yaxis <- FALSE
         }
       }
-
-      # # Wrap LEVELS for Categorical Variables
-      # if(prep_$type %in% c("categorical")) {
-      #   prep_$props <- prep_$props %>%
-      #     mutate(levels = stringr::str_wrap(levels,
-      #                                       width = prep_$axis_wrap) %>%
-      #              forcats::as_factor())
-      # }
-
-      # else if(prep_$type %in% c("dichotomous")){
-      #   props_ <- props_ %>%
-      #     mutate(variable = stringr::str_wrap(variable,
-      #                                         width = axis_wrap) %>%
-      #              forcats::as_factor())
-      # }
 
     }
 
