@@ -235,6 +235,8 @@ plt_logic <- function(
 #' @param tb data.frame or tibble. This is what is being assessed and potentially modified.
 #' @param col character. Name of the column of interest.
 #' @param wrap integer. Threshold by which to wrap text.
+#' @return tibble
+#' @noRd
 plt_txt_wrap <- function(
     tb,
     col,
@@ -263,6 +265,41 @@ plt_txt_wrap <- function(
 
   # return
   tb
+}
+
+#' @title Join and refactor proportions table
+#'
+#' @description
+#' This helper function is used in `cdrs::enrich_props` in numerous places to do the simple task of taking the `plt_txt$lab_df` (labels table) and joining it to the `props` (proportions table).
+#' @param props tibble. Proportions derived originally from `cdrs::cdrs_props`.
+#' @param lab_df tibble. Labels derived originallyf rom `cdrs::cdrs_plt_txt`.
+#' @param lab_col character. Name of the column being joined.
+#' @param fct_col character. Name of the column being created and converted to a class factor variable.
+#' @return proportions tibble.
+#' @noRd
+plt_join_and_factor <- function(
+    props,
+    lab_df,
+    lab_col,
+    fct_col
+){
+  # Input validation
+  stopifnot(inherits(props, "data.frame"))
+  stopifnot(inherits(lab_df, "data.frame"))
+  stopifnot(inherits(lab_col, "character"))
+  stopifnot(inherits(fct_col, "character"))
+
+  # RETURN
+  # Modify proportions table.
+  props %>%
+    # Join selection of labels table: Variable and "lab_col"
+    dplyr::left_join(y = lab_df %>%
+                       dplyr::select(Variable, lab_col),
+                     by = c("variable" = "Variable")) %>%
+    # Rename "lab_col"
+    dplyr::rename(!!sym(fct_col) := lab_col) %>%
+    # Convert "fct_col" to factor
+    dplyr::mutate(!!sym(fct_col) := forcats::as_factor(!!sym(fct_col)))
 }
 
 #' @title Enrich proportions
@@ -407,20 +444,20 @@ enrich_props <- function(
       if("alphabet" %in% names(prep_$plt_txt$lab_df)){
 
         if(prep_$type %in% c("dichotomous")){
-          prep_$props <- prep_$props %>%
-            dplyr::left_join(y = prep_$plt_txt$lab_df %>%
-                               dplyr::select(Variable, alphabet),
-                             by = c("variable" = "Variable")) %>%
-            dplyr::rename(var_id = alphabet) %>%
-            dplyr::mutate(var_id = forcats::as_factor(var_id))
+          prep_$props <- plt_join_and_factor(
+            props = prep_$props,
+            lab_df = prep_$plt_txt$lab_df,
+            lab_col = "alphabet",
+            fct_col = "var_id"
+          )
 
         } else if(prep_$type %in% c("categorical")) {
-          prep_$props <- prep_$props %>%
-            dplyr::left_join(y = prep_$plt_txt$lab_df %>%
-                               dplyr::select(level, alphabet),
-                             by = c("levels" = "level")) %>%
-            dplyr::rename(lvl_id = alphabet) %>%
-            dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
+          prep_$props <- plt_join_and_factor(
+            props = prep_$props,
+            lab_df = prep_$plt_txt$lab_df,
+            lab_col = "alphabet",
+            fct_col = "lvl_id"
+          )
         }
       } else if("short_label" %in% names(prep_$plt_txt$lab_df)){
         # Wrapping short_label text.
@@ -431,12 +468,12 @@ enrich_props <- function(
         )
 
         # now create var_id
-        prep_$props <- prep_$props %>%
-          dplyr::left_join(y = prep_$plt_txt$lab_df %>%
-                             dplyr::select(Variable, short_label),
-                           by = c("variable" = "Variable")) %>%
-          dplyr::rename(var_id = short_label) %>%
-          dplyr::mutate(var_id = forcats::as_factor(var_id))
+        prep_$props <- plt_join_and_factor(
+          props = prep_$props,
+          lab_df = prep_$plt_txt$lab_df,
+          lab_col = "short_label",
+          fct_col = "var_id"
+        )
 
       } else if("label" %in% names(prep_$plt_txt$lab_df)){
         # Wrapping label text.
@@ -447,12 +484,13 @@ enrich_props <- function(
         )
 
         # now create var_id
-        prep_$props <- prep_$props %>%
-          dplyr::left_join(y = prep_$plt_txt$lab_df %>%
-                             dplyr::select(Variable, label),
-                           by = c("variable" = "Variable")) %>%
-          dplyr::rename(var_id = label) %>%
-          dplyr::mutate(var_id = forcats::as_factor(var_id))
+        prep_$props <- plt_join_and_factor(
+          props = prep_$props,
+          lab_df = prep_$plt_txt$lab_df,
+          lab_col = "label",
+          fct_col = "var_id"
+        )
+
       }
 
       # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -465,14 +503,14 @@ enrich_props <- function(
           wrap = as.integer(prep_$legend_wrap)
         )
 
-        prep_$props <- prep_$props %>%
-          dplyr::left_join(
-            y = prep_$plt_txt$lab_df %>%
-              dplyr::select(level, short_level),
-            by = c("levels" = "level")
-          ) %>%
-          dplyr::rename(lvl_id = short_level) %>%
-          dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
+        # now create lvl_id
+        prep_$props <- plt_join_and_factor(
+          props = prep_$props,
+          lab_df = prep_$plt_txt$lab_df,
+          lab_col = "short_level",
+          fct_col = "lvl_id"
+        )
+
       }
     } else if("lab_df" %in% names(prep_$plt_txt) &
               prep_$type %in% c("diverging", "ordinal")) {
@@ -482,14 +520,38 @@ enrich_props <- function(
       if(prep_$txt_options$label_form %in% c("short") &
          "short_label" %in% colnames(prep_$plt_txt$lab_df)){
 
-        # set var_id to short label
-        prep_$props$var_id <- prep_$plt_txt$lab_df$short_label
+        # Wrapping short_label text.
+        prep_$plt_txt$lab_df <- plt_txt_wrap(
+          tb = prep_$plt_txt$lab_df,
+          col = "short_label",
+          wrap = as.integer(prep_$axis_wrap)
+        )
+
+        # now create var_id
+        prep_$props <- plt_join_and_factor(
+          props = prep_$props,
+          lab_df = prep_$plt_txt$lab_df,
+          lab_col = "short_label",
+          fct_col = "var_id"
+        )
 
       } else if(prep_$txt_options$label_form %in% c("default") &
                 "label" %in% colnames(prep_$plt_txt$lab_df)){
 
-        # set var_id to label
-        prep_$props$var_id <- prep_$plt_txt$lab_df$label
+        # Wrapping label text.
+        prep_$plt_txt$lab_df <- plt_txt_wrap(
+          tb = prep_$plt_txt$lab_df,
+          col = "label",
+          wrap = as.integer(prep_$axis_wrap)
+        )
+
+        # now create var_id
+        prep_$props <- plt_join_and_factor(
+          props = prep_$props,
+          lab_df = prep_$plt_txt$lab_df,
+          lab_col = "label",
+          fct_col = "var_id"
+        )
 
       } else if(!inherits(prep_$txt_options$label_form, "qid")){
         # Basically, lab_df doesn't have a `short_label` or `label`,
