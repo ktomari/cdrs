@@ -49,11 +49,11 @@ cdrs_plt_txt <- function(
   if(inherits(param_file, "data.frame")){
     stopifnot(
       names(param_file) %in% c("Variable",
-                             "short_title",
-                             "label",
-                             "short_label",
-                             "level",
-                             "short_level")
+                               "short_title",
+                               "label",
+                               "short_label",
+                               "level",
+                               "short_level")
     )
   }
 
@@ -104,13 +104,26 @@ cdrs_plt_txt <- function(
   if(!inherits(label_form, "NULL")){
 
     if(label_form %in% "short"){
-      out$labels <- labs %>%
-        dplyr::select(-short_title, -full_title, -label) %>%
-        dplyr::select(tidyselect::where(~!all(is.na(.)))) %>%
-        dplyr::rename(text_label = short_label)
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # SHORT: Hand-tailored shortened labels/levels..
+      # For details, examine the plot_parameters.xlsx > "labels" tab.
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Candidates for removal
+      drop_cols <- c("short_title", "full_title")
+
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Note, we keep `level` and `label`
+      # because we need to do a join later.
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      # drop candidates (above) and empty columns
+      out$lab_df <- labs %>%
+        dplyr::select(-tidyselect::any_of(drop_cols)) %>%
+        dplyr::select(tidyselect::where(~!all(is.na(.))))
 
     } else if (label_form == "alphabet"){
-      out$labels <- labs %>%
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      out$lab_df <- labs %>%
         dplyr::select(tidyselect::where(~!all(is.na(.)))) %>%
         dplyr::select(tidyselect::any_of(c("Variable",
                                            "label",
@@ -122,16 +135,30 @@ cdrs_plt_txt <- function(
         )
         )
     } else if(label_form == "default") {
-      out$labels <- labs %>%
-        dplyr::select(-short_title, -full_title, -short_label) %>%
-        dplyr::select(tidyselect::where(~!all(is.na(.)))) %>%
-        dplyr::rename(text_label = label)
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # DEFAULT: Essentially, the longer labels/levels,
+      # usually derived directly from the actual survey options.
+      # For details, examine the plot_parameters.xlsx > "labels" tab.
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Candidates for removal
+      drop_cols <- c("short_title",
+                     "full_title",
+                     # unlike in label_form == "short,
+                     # we remove the `short_label` and `short_level`
+                     # because we do not need them.
+                     "short_label",
+                     "short_level")
+
+      # drop candidates (above) and empty columns
+      out$lab_df <- labs %>%
+        dplyr::select(-tidyselect::any_of(drop_cols)) %>%
+        dplyr::select(tidyselect::where(~!all(is.na(.))))
     }
 
   } else {
     # In this case, default factors are used, and because
     # of this we don't need labels_
-    out$labels <- NULL
+    out$lab_df <- NULL
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -331,11 +358,11 @@ cdrs_plt_txt <- function(
     # If we have alphabet, add to captions.
     if(inherits(label_form, "character")){
       if(label_form == "alphabet"){
-        if("level" %in% names(out$labels)){
-          cap_alpha <- out$labels %>%
+        if("level" %in% names(out$lab_df)){
+          cap_alpha <- out$lab_df %>%
             dplyr::mutate(alpha_txt = paste0(alphabet, ". ", level))
         } else {
-          cap_alpha <- out$labels %>%
+          cap_alpha <- out$lab_df %>%
             dplyr::mutate(alpha_txt = paste0(alphabet, ". ", label))
         }
 
@@ -522,7 +549,7 @@ cdrs_plt_prep <- function(
     cols_ = prep_$cols
   )
 
-  # Set up a quick-access plot type.
+  # Set plot type (for quick-access)
   prep_$type <- prep_$logic$plot_type1 %>%
     unique()
 
@@ -584,6 +611,7 @@ cdrs_plt_prep <- function(
         # for the numeric variables.
         if("label_form" %in% names(prep_$txt_options)){
           if(prep_$txt_options$label_form == "default"){
+            warning("label_form cannot be 'default' for numeric columns.")
             prep_$txt_options$label_form <- "short"
           }
         }
@@ -621,8 +649,6 @@ cdrs_plt_prep <- function(
     prep_$plt_txt$subtitle <- NULL
 
   }  # END if(inherits(prep_$dict, "data.frame")){
-
-
 
   # Adjust title
   if(
@@ -732,7 +758,7 @@ cdrs_plt_pie <- function(
   if(add_legend_percent){
     prep_$props <- prep_$props %>%
       dplyr::mutate(legend_lab = paste0(
-        levels,
+        !!rlang::sym(fill_),
         " (",
         percent,
         "%)"
@@ -985,6 +1011,7 @@ cdrs_plt_stacked <- function(
     prep_
 ){
 
+  browser()
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Determine which column in the "proportions" (ie. prep_$props) tibble should
   # be the Y-axis variable. This can be displayed as a QID,
@@ -998,8 +1025,9 @@ cdrs_plt_stacked <- function(
     message(
       paste0(
         "Notice. ",
-        "In cdrs_plt_bar, the `variable` column was selected to be displayed.",
-        " Ideally, `var_id` should be selected."
+        "In cdrs_plt_stacked, ",
+        "the `variable` column was selected to be displayed. ",
+        "Ideally, `var_id` should be selected."
       )
     )
     y_ <- "variable"
@@ -1162,10 +1190,10 @@ cdrs_plt_hist <- function(
     ) +
     ggplot2::labs(
       x = {
-        if(inherits(prep_$plt_txt$labels,
+        if(inherits(prep_$plt_txt$lab_df,
                     "data.frame")){
           # eg. Years in the Delta
-          prep_$plt_txt$labels$text_label[1]
+          prep_$plt_txt$lab_df$label[1]
         } else {
           # eg. (blank)
           NULL

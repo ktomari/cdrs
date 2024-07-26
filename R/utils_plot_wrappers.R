@@ -228,6 +228,43 @@ plt_logic <- function(
   logic_
 }
 
+#' @title Wrap text for a data.frame column.
+#'
+#' @description
+#' Wrap a character column in a data.frame or tibble within a certain character limit.
+#' @param tb data.frame or tibble. This is what is being assessed and potentially modified.
+#' @param col character. Name of the column of interest.
+#' @param wrap integer. Threshold by which to wrap text.
+plt_txt_wrap <- function(
+    tb,
+    col,
+    wrap = 20L
+){
+  # Input validation
+  stopifnot(inherits(tb, "data.frame"))
+  stopifnot(inherits(col, "character"))
+  stopifnot(inherits(wrap, "integer"))
+
+  # First determine if we should wrap.
+  should_wrap <- tb[[col]] %>%
+    unique() %>%
+    purrr::map_vec(.,
+                   ~stringr::str_length(.x) > wrap)
+
+  should_wrap <- T %in% should_wrap
+
+  # Second, if we need to wrap text, lets do it.
+  if(should_wrap){
+  tb[[col]] <- purrr::map_vec(
+    .x = tb[[col]],
+    .f = ~stringr::str_wrap(.x, width = wrap)
+  )
+  }
+
+  # return
+  tb
+}
+
 #' @title Enrich proportions
 #'
 #' @description
@@ -238,6 +275,7 @@ plt_logic <- function(
 enrich_props <- function(
     prep_
 ){
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Add Encoding ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -359,16 +397,18 @@ enrich_props <- function(
     # Create `var_id` column
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Create variable and level id's used in the labeling of plots.
-    if("labels" %in% names(prep_$plt_txt) &
+    if("lab_df" %in% names(prep_$plt_txt) &
        prep_$type %in% c("dichotomous",
                          "categorical")){
 
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ## Labels ----
       # Letter-based label, eg. a), b), c), ...
-      if("alphabet" %in% names(prep_$plt_txt$labels)){
+      if("alphabet" %in% names(prep_$plt_txt$lab_df)){
 
         if(prep_$type %in% c("dichotomous")){
           prep_$props <- prep_$props %>%
-            dplyr::left_join(y = prep_$plt_txt$labels %>%
+            dplyr::left_join(y = prep_$plt_txt$lab_df %>%
                                dplyr::select(Variable, alphabet),
                              by = c("variable" = "Variable")) %>%
             dplyr::rename(var_id = alphabet) %>%
@@ -376,69 +416,58 @@ enrich_props <- function(
 
         } else if(prep_$type %in% c("categorical")) {
           prep_$props <- prep_$props %>%
-            dplyr::left_join(y = prep_$plt_txt$labels %>%
+            dplyr::left_join(y = prep_$plt_txt$lab_df %>%
                                dplyr::select(level, alphabet),
                              by = c("levels" = "level")) %>%
             dplyr::rename(lvl_id = alphabet) %>%
             dplyr::mutate(lvl_id = forcats::as_factor(lvl_id))
         }
-      }  # END if("alphabet" ...)
-
-      # Wrapping short LABELS (from dictionary).
-      # See `cdrs_plt_txt` in this document for more details.
-      if("text_label" %in% names(prep_$plt_txt$labels)){
-        # determine first if we should str_wrap text
-        # Note, remember:
-        # prep_ is a list,
-        # plt_txt is a list,
-        # labels is a tibble,
-        # text_label is column
-        should_wrap <- prep_$plt_txt$labels$text_label %>%
-          unique() %>%
-          purrr::map_vec(.,
-                         ~stringr::str_length(.x) > prep_$axis_wrap)
-
-        should_wrap <- T %in% should_wrap
-
-        if(should_wrap){
-          prep_$plt_txt$labels$text_label <- purrr::map_vec(
-            .x = prep_$plt_txt$labels$text_label,
-            .f = ~stringr::str_wrap(.x, width = prep_$axis_wrap)
-          )
-        }
+      } else if("short_label" %in% names(prep_$plt_txt$lab_df)){
+        # Wrapping short_label text.
+        prep_$plt_txt$lab_df <- plt_txt_wrap(
+          tb = prep_$plt_txt$lab_df,
+          col = "short_label",
+          wrap = as.integer(prep_$axis_wrap)
+        )
 
         # now create var_id
         prep_$props <- prep_$props %>%
-          dplyr::left_join(y = prep_$plt_txt$labels %>%
-                             dplyr::select(Variable, text_label),
+          dplyr::left_join(y = prep_$plt_txt$lab_df %>%
+                             dplyr::select(Variable, short_label),
                            by = c("variable" = "Variable")) %>%
-          dplyr::rename(var_id = text_label) %>%
+          dplyr::rename(var_id = short_label) %>%
           dplyr::mutate(var_id = forcats::as_factor(var_id))
 
-      }  # END if("text_label"
+      } else if("label" %in% names(prep_$plt_txt$lab_df)){
+        # Wrapping label text.
+        prep_$plt_txt$lab_df <- plt_txt_wrap(
+          tb = prep_$plt_txt$lab_df,
+          col = "label",
+          wrap = as.integer(prep_$axis_wrap)
+        )
 
-      # Wrapping short LEVELS (from dictionary).
-      if ("short_level" %in% names(prep_$plt_txt$labels)) {
-        # determine first if we should str_wrap text
-        should_wrap <- prep_$plt_txt$labels$short_level %>%
-          unique() %>%
-          purrr::map_vec(
-            .x = .,
-            .f = ~ stringr::str_length(.x) > prep_$legend_wrap
-          )
+        # now create var_id
+        prep_$props <- prep_$props %>%
+          dplyr::left_join(y = prep_$plt_txt$lab_df %>%
+                             dplyr::select(Variable, label),
+                           by = c("variable" = "Variable")) %>%
+          dplyr::rename(var_id = label) %>%
+          dplyr::mutate(var_id = forcats::as_factor(var_id))
+      }
 
-        should_wrap <- T %in% should_wrap
-
-        if(should_wrap) {
-          prep_$plt_txt$labels$short_level <- purrr::map_vec(
-            .x = prep_$plt_txt$labels$short_level,
-            .f = ~ stringr::str_wrap(.x, width = prep_$legend_wrap)
-          )
-        }
+      # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      # Levels ----
+      if ("short_level" %in% names(prep_$plt_txt$lab_df)) {
+        # Wrapping short_level text.
+        prep_$plt_txt$lab_df <- plt_txt_wrap(
+          tb = prep_$plt_txt$lab_df,
+          col = "short_level",
+          wrap = as.integer(prep_$legend_wrap)
+        )
 
         prep_$props <- prep_$props %>%
           dplyr::left_join(
-            y = prep_$plt_txt$labels %>%
+            y = prep_$plt_txt$lab_df %>%
               dplyr::select(level, short_level),
             by = c("levels" = "level")
           ) %>%
@@ -452,6 +481,7 @@ enrich_props <- function(
       # So we specify that we will have no y-axis text labels
       # (ie. theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()))
       # ...OR...
+      # TODO Review 2) below. I don't think this makes sense.
       # 2) label_form is "default".
       # So, for variables where we use levels,
       # we want to make sure to wrap long text,
@@ -467,13 +497,13 @@ enrich_props <- function(
         }
       }
 
-      # Wrap LEVELS for Categorical Variables
-      if(prep_$type %in% c("categorical")) {
-        prep_$props <- prep_$props %>%
-          mutate(levels = stringr::str_wrap(levels,
-                                            width = prep_$axis_wrap) %>%
-                   forcats::as_factor())
-      }
+      # # Wrap LEVELS for Categorical Variables
+      # if(prep_$type %in% c("categorical")) {
+      #   prep_$props <- prep_$props %>%
+      #     mutate(levels = stringr::str_wrap(levels,
+      #                                       width = prep_$axis_wrap) %>%
+      #              forcats::as_factor())
+      # }
 
       # else if(prep_$type %in% c("dichotomous")){
       #   props_ <- props_ %>%
@@ -640,12 +670,18 @@ plt_decorate <- function(
                                "categorical",
                                "numeric")){
             stringr::str_wrap(
-              paste0(prep_$captions, collapse = " "),
+              string = stringr::str_squish(
+                paste0(prep_$captions,
+                       collapse = " ")
+              ),
               width = floor((max_char/.7) * .5)
             )
           } else {
             stringr::str_wrap(
-              paste0(prep_$captions, collapse = " "),
+              string = stringr::str_squish(
+                paste0(prep_$captions,
+                       collapse = " ")
+              ),
               width = max_char/.7
             )
           }
@@ -729,8 +765,8 @@ plt_decorate <- function(
         axis.ticks.y = ggplot2::element_blank()
       )
   }
-  # TODO as of this writing, there is no way to omit the legend
-  # in categorical plots, which might be the analog to prep_$yaxis == F.
+  # TODO as of this writing, I have not decided how to handle yaxis == F
+  # for categorical plots.
 
   # theme ----
   plt_ <- plt_ +
