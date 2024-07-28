@@ -1,6 +1,6 @@
 Package: cdrs
 Title: Functions for the California Delta Residents Survey Data
-Version: 0.3.1
+Version: 0.3.2
 Authors@R: 
     person("Kenji", "Tomari", , "ktomari@ucdavis.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8039-3999"))
@@ -20,6 +20,7 @@ Imports:
     purrr,
     readr,
     readxl,
+    ggplot2,
     rlang,
     sf,
     stringr,
@@ -30,13 +31,15 @@ Imports:
     utils
 Suggests: 
     colorspace,
-    ggplot2,
     knitr,
     rcartocolor,
     RColorBrewer,
     rmarkdown,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    devtools,
+    usethis,
+    rstudioapi
 Config/DataSet: 
 Config/testthat/edition: 3
 Encoding: UTF-8
