@@ -1,5 +1,7 @@
 # cdrs 0.3.3
 
+Added new conditional warning function `warning_c`.
+
 # cdrs 0.3.2
 
 # cdrs 0.3.1
