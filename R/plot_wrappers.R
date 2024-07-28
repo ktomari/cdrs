@@ -646,7 +646,10 @@ cdrs_plt_prep <- function(
         # for the numeric variables.
         if("label_form" %in% names(prep_$txt_options)){
           if(prep_$txt_options$label_form == "default"){
-            warning("label_form cannot be 'default' for numeric columns.")
+            warning_c(
+              nm = "cdrs_plt_prep1",
+              msg = "label_form cannot be 'default' for numeric columns."
+              )
             prep_$txt_options$label_form <- "short"
           }
         }
@@ -874,8 +877,9 @@ cdrs_plt_bar <- function(
   stopifnot(inherits(prep_, "list"))
   stopifnot(c("type", "props") %in% names(prep_))
   if(prep_$type != "dichotomous"){
-    warning(
-      stringr::str_glue(
+    warning_c(
+      nm = "cdrs_plt_bar1",
+      msg = stringr::str_glue(
         "Passing {prep_$type} type plot into cdrs_plt_bar."
       )
     )
@@ -906,11 +910,9 @@ cdrs_plt_bar <- function(
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
-    warning(
-      paste0(
-        "In cdrs_plt_bar, the `variable` column was selected to be displayed.",
-        " Ideally, `var_id` should be selected."
-      )
+    warning_c(
+      nm = "cdrs_plt_bar2",
+        "The `variable` column was selected to be displayed. Ideally, `var_id` should be selected."
     )
     y_ <- "variable"
   }
@@ -1054,14 +1056,15 @@ cdrs_plt_stacked <- function(
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
   } else {
-    message(
-      paste0(
+    warning_c(
+      nm = "cdrs_plt_stacked1",
+      msg = paste0(
         "Notice. ",
-        "In cdrs_plt_stacked, ",
-        "the `variable` column was selected to be displayed. ",
+        "The `variable` column was selected to be displayed. ",
         "Ideally, `var_id` should be selected."
       )
     )
+
     y_ <- "variable"
   }
 
@@ -1070,7 +1073,9 @@ cdrs_plt_stacked <- function(
   # Therefore, we'll nullify the y-axis text.
   if("alphabet" %in% prep_$txt_options$label_form){
     prep_$yaxis <- FALSE
-    warning("At this time, label_form == 'alphabet' is not supported by cdrs_plt_stacked")
+    warning_c(
+      nm = "cdrs_plt_stacked2",
+      msg = "At this time, label_form == 'alphabet' is not supported.")
   }
 
   prep_ <- pal_main(

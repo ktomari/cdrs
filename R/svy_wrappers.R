@@ -397,7 +397,10 @@ cdrs_hist_table <- function(
     brk_size <- mean(diff(brks))
 
     if(length(brk_size) != 1){
-      warning("cdrs_hist_table determined a break size != 1.")
+      warning_c(
+        nm = "cdrs_hist_table1",
+        msg = "Determined a break size != 1."
+        )
       brk_size <- brk_size[1]
     }
 

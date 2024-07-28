@@ -197,7 +197,9 @@ plt_logic <- function(
   if(!(all(grepl("^Q", cols_, perl = T)) |
      all(grepl("\\_P$", cols_, perl = T)))
      ){
-    warning(
+    warning_c(
+      nm = "plt_logic1",
+      msg =
       paste0(
         "Did you mean to supply these variables? ",
         paste0(cols_, collapse = ", ")
@@ -216,11 +218,9 @@ plt_logic <- function(
       dplyr::filter(Variable %in% cols_)
 
     if(length(unique(logic_$plot_type1)) != 1){
-      warning(
-        paste0(
-          "Based on plt_logic, ",
-          "these `cols_` appear to have incompatible plot types."
-        )
+      warning_c(
+        nm = "plt_logic2",
+        msg = "These `cols_` appear to have incompatible plot types."
       )
     }
   }
@@ -932,7 +932,10 @@ plt_decorate <- function(
 cumpos <- function(x){
   # confirm x is a vector
   if(length(x) == 1){
-    warning("There appears to be an error in fn_cumpos. `x` should be length > 1")
+    warning_c(
+      nm = "cumpos1",
+      msg = "There appears to be an error in fn_cumpos. `x` should be length > 1."
+      )
   }
 
   # if you supplied the proportions, and not percentages...
