@@ -406,8 +406,12 @@ enrich_props <- function(
                          "diverging")){
 
       prep_$props <- prep_$props %>%
+        # First, group by qid.
+        # (eg Q13a is one group)
         tidyr::nest(.by = variable,
                     .key = "nested") %>%
+        # Next, obtain the value for the first 'level'.
+        # (eg. "Very Concerned")
         dplyr::mutate(max_val = purrr::map_vec(
           nested,
           function(tb){
@@ -418,6 +422,8 @@ enrich_props <- function(
             tb$mean[tb$levels==lvl_]
 
           })) %>%
+        # sort by the highest value
+        # (Note, we reverse the order for ggplot2.)
         dplyr::arrange(max_val) %>%
         dplyr::select(-max_val) %>%
         tidyr::unnest("nested") %>%
@@ -619,7 +625,7 @@ enrich_props <- function(
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # We perform a few `as_factor` and other factor-related operations on
   # `props_` before we finish it up.
-  if(prep_$type %in% c("diverging")){
+  if(prep_$type %in% c("diverging", "ordinal")){
     # flip levels around
     if("var_id" %in% names(prep_$props)){
       prep_$props <- prep_$props %>%

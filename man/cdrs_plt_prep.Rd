@@ -14,6 +14,7 @@ cdrs_plt_prep(
   sort_ = TRUE,
   title_size = 14,
   label_threshold = 10,
+  add_legend_percent = TRUE,
   param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
 }
@@ -35,6 +36,8 @@ cdrs_plt_prep(
 \item{title_size}{numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.}
 
 \item{label_threshold}{numeric. The percent threshold by which we should stop displaying labels (in \code{geom_label}) for stacked bar plots. If no threshold is desired, enter \code{NULL}.}
+
+\item{add_legend_percent}{logical. When a single variable is being plotted with values the \code{label_threshold}, we can choose to show the percentage of the missing labels in the legend which appears below the plot.}
 
 \item{param_file}{character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.}
 }

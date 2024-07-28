@@ -397,6 +397,7 @@ cdrs_plt_txt <- function(
 #' @param sort_ logical. Sort variables/levels by magnitude of the mean.
 #' @param title_size numeric. The size of the font for the title. All other fonts scale linearly to title_size, even if a title isn't included.
 #' @param label_threshold numeric. The percent threshold by which we should stop displaying labels (in `geom_label`) for stacked bar plots. If no threshold is desired, enter `NULL`.
+#' @param add_legend_percent logical. When a single variable is being plotted with values the `label_threshold`, we can choose to show the percentage of the missing labels in the legend which appears below the plot.
 #' @param param_file character. Path to custom parameters xlsx document. See inst/extdata/plot_parameters.xlsx for file structure.
 #' @return a list object, often named `prep_` in the \{cdrs\} package.
 #' @export
@@ -410,6 +411,7 @@ cdrs_plt_prep <- function(
     sort_ = TRUE,
     title_size = 14,
     label_threshold = 10,
+    add_legend_percent = TRUE,
     param_file = system.file("extdata",
                              "plot_parameters.xlsx",
                              package = "cdrs")
@@ -549,16 +551,49 @@ cdrs_plt_prep <- function(
     cols_ = prep_$cols
   )
 
+  # Error check.
+  if(!inherits(prep_$logic, "data.frame")){
+    stop(
+      "Error in cdrs_plt_prep. The call to plt_logic did not return a data.frame."
+    )
+  }
+
+  if(nrow(prep_$logic) == 0){
+    stop(
+      "Error in cdrs_plt_prep. The call to plt_logic returned an empty data.frame."
+    )
+  }
+
+
   # Set plot type (for quick-access)
   prep_$type <- prep_$logic$plot_type1 %>%
     unique()
 
+  if(length(prep_$type) > 1){
+    stop("cdrs_plt_prep. The number of variable types exceeds 1. Select variables of the same type (eg. ordinal only).")
+  }
+
   # Error check.
   # As of the time of this writing (2024-07-23),
   # there is no option to display an unweighted histogram.
-  if(prep_$type %in% "numeric" & !is_weighted){
+  if(("numeric" %in% prep_$type) & !is_weighted){
     stop("Only the weighted version of numeric variables are permitted.")
   }
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Legend Percent
+  # Determine if we need to turn off `add_legend_percent`.
+  # Case 1: In diverging and ordinal plots, sometimes we combine
+  # multiple variables together, eg. 13a, 13b, 13c etc.
+  # This produces a plot with multiple bars, and thus we're unable to
+  # succinctly include the percentages in the legend items.
+  if(prep_$type %in% c("diverging", "ordinal")){
+    if(length(unique(cols_)) > 1){
+      add_legend_percent <- FALSE
+    }
+  }
+
+  prep_$add_legend_percent <- add_legend_percent
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Remove angle brackets
@@ -605,7 +640,7 @@ cdrs_plt_prep <- function(
       # 2) txt_options provided as argument to this fn, cdrs_plt_prep.
 
       # Special adjustment for numeric variable, eg Q1a.
-      if(prep_$type %in% "numeric"){
+      if("numeric" %in% prep_$type){
 
         # The issue here is that there is little metadata in the dictionary
         # for the numeric variables.
@@ -662,7 +697,7 @@ cdrs_plt_prep <- function(
   # numeric bypass ----
   # Since numeric data doesn't produce "proportions",
   # we bypass it here with an early `return()`.
-  if(prep_$type %in% "numeric"){
+  if("numeric" %in% prep_$type){
 
     prep_$hist_tb <- cdrs_hist_table(
       data_ = data_,
@@ -735,10 +770,6 @@ cdrs_plt_pie <- function(
     prep_
 ){
 
-  # TODO incorporate this into prep
-  # Should we add a percentage value to the legend?
-  add_legend_percent <- TRUE
-
   prep_ <- pal_main(
     prep_ = prep_
   )
@@ -756,7 +787,7 @@ cdrs_plt_pie <- function(
 
   # To make life easier,
   # let's add percentages to the legend items
-  if(add_legend_percent){
+  if(prep_$add_legend_percent){
     prep_$props <- prep_$props %>%
       dplyr::mutate(legend_lab = paste0(
         !!rlang::sym(fill_),
@@ -797,7 +828,7 @@ cdrs_plt_pie <- function(
     # add colors
     ggplot2::scale_fill_manual(
       values = plt_pal,
-      labels = if(add_legend_percent){
+      labels = if(prep_$add_legend_percent){
         prep_$props$legend_lab
       } else {
         NULL
@@ -1043,7 +1074,8 @@ cdrs_plt_stacked <- function(
   }
 
   prep_ <- pal_main(
-    prep_ = prep_
+    prep_ = prep_,
+    reverse_ = TRUE
   )
 
   # extract palette
@@ -1062,17 +1094,19 @@ cdrs_plt_stacked <- function(
   # This occurs when the in-graph labels have to be cut due to
   # space. In such cases, where the label has been omitted,
   # we want to add the percent to the legend instead.
-  prep_$props <- prep_$props %>%
-    dplyr::mutate(legend_lab = dplyr::case_when(
-                  percent < prep_$label_threshold ~ paste0(levels,
-                                                           " (",
-                                                           percent,
-                                                           "%)"),
-                  .default = levels)
-    )
+  if(prep_$add_legend_percent){
+    prep_$props <- prep_$props %>%
+      dplyr::mutate(legend_lab = dplyr::case_when(
+        percent < prep_$label_threshold ~ paste0(levels,
+                                                 " (",
+                                                 percent,
+                                                 "%)"),
+        .default = levels)
+      )
+  }
+
 
   # Create plot.
-
   plt_ <- ggplot2::ggplot(
     data = prep_$props,
     mapping = ggplot2::aes(
@@ -1084,11 +1118,20 @@ cdrs_plt_stacked <- function(
     ggplot2::geom_col(
       position = ggplot2::position_stack()
     ) +
-    ggplot2::scale_fill_manual(
-      values = plt_pal,
-      # guide = ggplot2::guide_legend(reverse = TRUE),
-      labels = prep_$props$legend_lab
-      ) +
+    {
+      if(prep_$add_legend_percent){
+        ggplot2::scale_fill_manual(
+          values = plt_pal,
+          # guide = ggplot2::guide_legend(reverse = TRUE),
+          labels = prep_$props$legend_lab
+        )
+      } else {
+        ggplot2::scale_fill_manual(
+          values = plt_pal
+          # guide = ggplot2::guide_legend(reverse = TRUE)
+        )
+      }
+    } +
     ggplot2::scale_x_continuous(
       breaks = c(0, 0.25, 0.5, 0.75, 1),
       labels = c("0", "25%", "50%", "75%", "100%"),
@@ -1148,7 +1191,7 @@ cdrs_plt_stacked <- function(
   # if yaxis if FALSE, we don't want anything displayed
   if(!prep_$yaxis){
     plt_ <- plt_ +
-      ggplot2::theme(axis.text.y = ggplot2::element_blank())
+      ggplot2:: theme(axis.text.y = ggplot2::element_blank())
   }
 
   # return
