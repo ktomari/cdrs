@@ -885,9 +885,6 @@ cdrs_plt_bar <- function(
     )
   }
 
-  # TODO
-  base_theme <- sample(c("theme_bw", "theme_dark"))
-
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # add color palette to prep_$props
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1171,10 +1168,10 @@ cdrs_plt_stacked <- function(
       legend.position = "bottom",
       legend.margin = ggplot2::margin(
         t = 0,
-        r = 0,
-        b = 1,
-        l = 0,
-        unit = "lines"
+        r = 100,
+        b = 5,
+        l = 100,
+        unit = "pt"
       ),
       # Adjusting bottom margin
       # legend.spacing.y = grid::unit(2, "lines"),
@@ -1185,12 +1182,7 @@ cdrs_plt_stacked <- function(
         colour = "#333333",
         linewidth = 1,
         fill = NA
-      ),
-      plot.margin = grid::unit(c(1,  # t
-                                 1,  # r
-                                 1,  # b
-                                 1), # l
-                               'lines')
+      )
     )
 
   # if yaxis if FALSE, we don't want anything displayed
