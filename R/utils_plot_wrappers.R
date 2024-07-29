@@ -929,7 +929,6 @@ plt_decorate <- function(
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Determine how many rows for legend.
     # First, get num of factors.
-
     legend_nrow <- plt_legend_nrow(
       title_size = prep_$title_size,
       fcts = prep_$props$levels %>%
@@ -956,7 +955,9 @@ plt_decorate <- function(
         )
       ))
     # ggplot2::guides(fill = ggplot2::guide_legend(byrow = TRUE))
+
   } else if(prep_$type %in% c("categorical")){
+
     plt_ <- plt_ +
       ggplot2::theme(
         legend.spacing.y = grid::unit(prep_$title_size * 0.7, "pt"),
@@ -965,7 +966,13 @@ plt_decorate <- function(
         )
       ) +
       ggplot2::guides(fill = ggplot2::guide_legend(
-        reverse = TRUE
+        reverse = TRUE,
+        ncol = 1,
+        override.aes = list(
+          color = "#333333", # Black stroke
+          size = prep_$title_size * 0.3,
+          linetype = 1
+        )
       )
       )
   }
