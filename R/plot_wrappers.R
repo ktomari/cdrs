@@ -801,7 +801,6 @@ cdrs_plt_pie <- function(
       )
   }
 
-
   plt_ <- ggplot2::ggplot(
     data = prep_$props,
     mapping =
@@ -847,6 +846,14 @@ cdrs_plt_pie <- function(
     # overwrite some theme elements
     # TODO fix redundancy
     ggplot2::theme(
+      legend.position = "right",
+      legend.margin = ggplot2::margin(
+        t = 10,
+        r = 10,
+        b = 10,
+        l = 10,
+        unit = "pt"
+      ),
       axis.ticks = ggplot2::element_blank(),
       axis.title = ggplot2::element_blank(),
       axis.text = ggplot2::element_blank(),
