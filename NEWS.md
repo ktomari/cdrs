@@ -1,5 +1,7 @@
 # cdrs 0.3.4
 
+Adjusted legend labeling using a lm.
+
 # cdrs 0.3.3
 
 Added new conditional warning function `warning_c`.
