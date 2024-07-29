@@ -697,6 +697,38 @@ plt_ratio <- function(
   )
 }
 
+#' @title Determine number of rows for the legend
+#'
+#' @description
+#' This function uses a linear model to estimate the number of legend items per row for plots with legends placed on the bottom.
+#'
+#' @param title_size numeric. The font size in points.
+#' @param fcts character or factor. Each level in the factor variable.
+#' @return integer, number of rows.
+plt_legend_nrow <- function(
+    title_size,
+    fcts
+){
+  stopifnot(inherits(title_size, "numeric") |
+              inherits(title_size, "integer"))
+
+  stopifnot(inherits(fcts, "character") |
+              inherits(fcts, "factor"))
+
+  # coefficients for linear model
+  coeffs <- c(0.128, 0.048, 0.026, -2.66)
+
+  nfct <- length(fcts)
+  nchr <- nchar(paste0(fcts, collapse = " "))
+
+  # linear model
+  pred <- title_size*coeffs[1] + nfct*coeffs[2] + nchr*coeffs[3] + coeffs[4]
+
+  # conservative estimate
+  ceiling(pred) |>
+    as.integer()
+}
+
 #' Add plot scale elements
 #'
 #' @param plt_ a ggplot2 object
@@ -862,28 +894,48 @@ plt_decorate <- function(
   # TODO as of this writing, I have not decided how to handle yaxis == F
   # for categorical plots.
 
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Plot Margin ----
+  # Determine plot margin padding
+  # Set default padding
+  default_pad <- 10
+  padding_ <- list(
+    t = default_pad,
+    r = default_pad,
+    b = default_pad,
+    l = default_pad,
+    unit = "pt"
+  )
+
+  # padding logic
+  if(prep_$type == "dichotomous"){
+    padding_$r <- padding_$r * 1.15
+    padding_$l <- 0
+  }
+
+  # Create the margin using do.call
+  padding_ <- do.call(ggplot2::margin, padding_)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # theme ----
   plt_ <- plt_ +
     ggplot2::theme(
-      plot.margin = ggplot2::margin(
-        t = prep_$title_size,
-        r = prep_$title_size,
-        b = prep_$title_size,
-        l = prep_$title_size,
-        unit = "pt")
+      plot.margin = ggplot2::margin(padding_)
     )
+
   # legend spacing ----
   if(prep_$type %in% c("ordinal", "diverging")){
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Determine how many rows for legend.
     # First, get num of factors.
-    nfct <- prep_$props$levels %>%
-      unique() %>%
-      droplevels() %>%
-      length()
 
-    legend_nrow <- ceiling(nfct/4)
+    legend_nrow <- plt_legend_nrow(
+      title_size = prep_$title_size,
+      fcts = prep_$props$levels %>%
+        unique() %>%
+        droplevels()
+      )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     plt_ <- plt_ +
