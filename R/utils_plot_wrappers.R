@@ -898,7 +898,7 @@ plt_decorate <- function(
   # Plot Margin ----
   # Determine plot margin padding
   # Set default padding
-  default_pad <- 10
+  default_pad <- prep_$title_size * 0.7
   padding_ <- list(
     t = default_pad,
     r = default_pad,
