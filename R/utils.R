@@ -3,11 +3,10 @@
 #' @description
 #' Mitigate repetitive warning messages by only delivering warnings on the first and every 10th repetition.
 #'
-#' @details
-#'
 #' @param nm character. The name of the warning message.
 #' @param msg character. Warning message.
 #' @return NULL This function does not return any value.
+#' @noRd
 warning_c <- function(
     nm,
     msg
