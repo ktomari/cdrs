@@ -1110,7 +1110,8 @@ cdrs_plt_stacked <- function(
                                                  " (",
                                                  percent,
                                                  "%)"),
-        .default = levels)
+        .default = levels) %>%
+          forcats::as_factor()
       )
   }
 
@@ -1175,9 +1176,9 @@ cdrs_plt_stacked <- function(
       legend.position = "bottom",
       legend.margin = ggplot2::margin(
         t = 0,
-        r = 100,
+        r = 5,
         b = 5,
-        l = 100,
+        l = 5,
         unit = "pt"
       ),
       # Adjusting bottom margin
