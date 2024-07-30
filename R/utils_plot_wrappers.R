@@ -933,7 +933,7 @@ plt_decorate <- function(
       title_size = prep_$title_size,
       fcts = prep_$props$levels %>%
         unique() %>%
-        droplevels()
+        as.character()
       )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
