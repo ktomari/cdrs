@@ -1,3 +1,7 @@
+# cdrs 0.3.5
+
+Fixed bug in `plt_legend_nrow()`.
+
 # cdrs 0.3.4
 
 Adjusted legend labeling using a lm.
