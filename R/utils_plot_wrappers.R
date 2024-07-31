@@ -948,6 +948,8 @@ plt_decorate <- function(
   if(prep_$type == "dichotomous"){
     padding_$r <- fontx(padding_$r, 1.15)
     padding_$l <- 0
+  } else if(prep_$type %in% c("diverging", "ordinal")){
+    padding_$r <- fontx(padding_$r, 1.15)
   }
 
   # Create the margin using do.call
