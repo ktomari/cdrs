@@ -904,6 +904,8 @@ cdrs_plt_bar <- function(
   plt_pal <- prep_$props$pal %>%
     unique()
 
+  # set default of whether to show ylab or not.
+  ylab <- TRUE
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Determine which column in the "proportions" (ie. prep_$props) tibble should
   # be the Y-axis variable. This can be displayed as a QID,
@@ -913,6 +915,10 @@ cdrs_plt_bar <- function(
   # even as we drop any text labels.)
   if("var_id" %in% names(prep_$props)){
     y_ <- "var_id"
+  } else if(nrow(prep_$props) == 1) {
+    # This emerges in only a few cases, eg Q20
+    y_ <- "variable"
+    ylab <- FALSE
   } else {
     warning_c(
       nm = "cdrs_plt_bar2",
@@ -957,7 +963,6 @@ cdrs_plt_bar <- function(
       limits = c(0,100),
       # expand = expansion(mult = c(0, 0))
       expand = c(0,0)) +
-    # Y-axis Label
     ggplot2::ylab("") +
     ggplot2::xlab("Percent") +
     ggplot2::theme_bw() +
@@ -1017,7 +1022,15 @@ cdrs_plt_bar <- function(
       # position = ggplot2::position_dodge2(width = 0.5, reverse = TRUE),
       na.rm = TRUE,
       hjust = 0
-    )
+    ) +
+    # Y-axis Label
+    {
+      if(!ylab){
+        ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                       axis.ticks.y = ggplot2::element_blank()
+                       )
+      }
+    }
     # ggplot2::geom_text(
     #   mapping = ggplot2::aes(
     #     x = .percent,
