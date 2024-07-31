@@ -725,8 +725,38 @@ plt_legend_nrow <- function(
   pred <- title_size*coeffs[1] + nfct*coeffs[2] + nchr*coeffs[3] + coeffs[4]
 
   # conservative estimate
-  ceiling(pred) |>
+  pred <- ceiling(pred) |>
     as.integer()
+
+  if(pred == 0){
+    pred <- 1L
+  }
+
+  # return
+  pred
+}
+
+#' @title Adjust font size
+#'
+#' @description
+#' A simple function to adjust font sizes and mitigate coding errors.
+#'
+#' @param title_size numeric.
+#' @param m_ numeric. The multiplier.
+#' @return numeric.
+#' @noRd
+fontx <- function(
+    title_size,
+    m_
+){
+  p_ <- title_size * m_
+  p_ <- round(p_)
+  if(p_ < 1){
+    p_ <- 1
+  }
+
+  # return
+  p_
 }
 
 #' Add plot scale elements
@@ -818,6 +848,13 @@ plt_decorate <- function(
     )
 
   # add font sizes ----
+
+  # default font sizes
+  h2 <- fontx(prep_$title_size, 0.85)
+  h3 <- fontx(prep_$title_size, 0.80)
+  h4 <- fontx(prep_$title_size, 0.70)
+  h6 <- fontx(prep_$title_size, 0.4)
+
   # title
   if("title" %in% items_){
     plt_ <- plt_ +
@@ -838,7 +875,7 @@ plt_decorate <- function(
     plt_ <- plt_ +
       ggplot2::theme(
         plot.subtitle = ggplot2::element_text(
-          size = (prep_$title_size * 0.85)
+          size = h2
         )
       )
   } else {
@@ -853,7 +890,7 @@ plt_decorate <- function(
     plt_ <- plt_ +
       ggplot2::theme(
         plot.caption = ggplot2::element_text(
-          size = (prep_$title_size * 0.7)
+          size = h4
         )
       )
   } else {
@@ -869,7 +906,7 @@ plt_decorate <- function(
   plt_ <- plt_ +
     ggplot2::theme(
       axis.title = ggplot2::element_text(
-        size = (prep_$title_size * 0.8)
+        size = h3
       )
     )
 
@@ -879,7 +916,7 @@ plt_decorate <- function(
   plt_ <- plt_ +
     ggplot2::theme(
       axis.text = ggplot2::element_text(
-        size = (prep_$title_size * 0.7)
+        size = h4
       )
     )
 
@@ -898,7 +935,7 @@ plt_decorate <- function(
   # Plot Margin ----
   # Determine plot margin padding
   # Set default padding
-  default_pad <- prep_$title_size * 0.7
+  default_pad <- h4
   padding_ <- list(
     t = default_pad,
     r = default_pad,
@@ -909,7 +946,7 @@ plt_decorate <- function(
 
   # padding logic
   if(prep_$type == "dichotomous"){
-    padding_$r <- padding_$r * 1.15
+    padding_$r <- fontx(padding_$r, 1.15)
     padding_$l <- 0
   }
 
@@ -939,9 +976,9 @@ plt_decorate <- function(
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     plt_ <- plt_ +
       ggplot2::theme(
-        legend.spacing.y = grid::unit(prep_$title_size * 0.7, "pt"),
+        legend.spacing.y = ggplot2::unit(h4, "pt"),
         legend.text = ggplot2::element_text(
-          size = grid::unit(prep_$title_size * 0.7, "pt")
+          size = ggplot2::unit(h4, "pt")
           )
       ) +
       ggplot2::guides(fill = ggplot2::guide_legend(
@@ -950,7 +987,7 @@ plt_decorate <- function(
         reverse = TRUE,
         override.aes = list(
           color = "#333333", # Black stroke
-          size = prep_$title_size * 0.3,
+          size = h6,
           linetype = 1
         )
       ))
@@ -960,9 +997,9 @@ plt_decorate <- function(
 
     plt_ <- plt_ +
       ggplot2::theme(
-        legend.spacing.y = grid::unit(prep_$title_size * 0.7, "pt"),
+        legend.spacing.y = grid::unit(h4, "pt"),
         legend.text = ggplot2::element_text(
-          size = grid::unit(prep_$title_size * 0.7, "pt")
+          size = grid::unit(h4, "pt")
         )
       ) +
       ggplot2::guides(fill = ggplot2::guide_legend(
@@ -970,7 +1007,7 @@ plt_decorate <- function(
         ncol = 1,
         override.aes = list(
           color = "#333333", # Black stroke
-          size = prep_$title_size * 0.3,
+          size = h6,
           linetype = 1
         )
       )

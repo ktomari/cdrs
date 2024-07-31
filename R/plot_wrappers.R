@@ -822,7 +822,7 @@ cdrs_plt_pie <- function(
       # label.padding = ggplot2::unit(0.15, "lines"),
       fill = "#ffffff",
       # color = "#333333",
-      size = prep_$title_size * 0.7,
+      size = fontx(prep_$title_size, 0.7),
       label.size = 0,
       size.unit = "pt",
       na.rm = T
@@ -979,7 +979,7 @@ cdrs_plt_bar <- function(
   # size of label
   # (Proportion this using plt_ratio because as title size increases,
   # the graph proportionally decreases.)
-  label_size <- (prep_$title_size * 0.6)
+  label_size <- fontx(prep_$title_size, 0.6)
 
   # geom_text relative to top of bar (in units of percent).
   prep_$props <- prep_$props %>%
@@ -1093,8 +1093,7 @@ cdrs_plt_stacked <- function(
   # Set up data for geom_label()
   # (Note, the problem is placing the label correctly
   # is actually quite difficult. This function determines where
-  # along the line between 1:100 or in our case 0:1 a label
-  # should exist.)
+  # along the line between 1:100 a label should exist.)
   prep_$props <- prep_$props %>%
     dplyr::group_by(!!rlang::sym(y_)) %>%
     mutate(pos = cumpos(mean)/100)
@@ -1114,7 +1113,6 @@ cdrs_plt_stacked <- function(
           forcats::as_factor()
       )
   }
-
 
   # Create plot.
   plt_ <- ggplot2::ggplot(
@@ -1154,10 +1152,12 @@ cdrs_plt_stacked <- function(
         # that we derived manually.
         x = pos,
         label = percent_lab
-        ),
-      size = prep_$title_size * 0.7,
+      ),
+      size = fontx(prep_$title_size, 0.7),
       size.unit = "pt",
-      label.padding = ggplot2::unit(0.15, "lines"),
+      label.padding = grid::unit(
+        x = fontx(prep_$title_size, 0.2),
+        units = "pt"),
       fill = "#ffffff",
       color = "#333333",
       label.size = NA,
