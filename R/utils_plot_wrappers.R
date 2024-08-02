@@ -183,18 +183,21 @@ plt_labels <- function(
 #'
 #' @param file_ path to file.
 #' @param cols_ character. Columns to subset.
+#' @param suppress_warnings logical. Whether to turn off warnings.
 #' @noRd
 plt_logic <- function(
     file_ = system.file("extdata",
                         "plot_parameters.xlsx",
                         package = "cdrs"),
-    cols_ = NULL
+    cols_ = NULL,
+    suppress_warnings = FALSE
 ){
   # Parameter Validation
   stopifnot(inherits(file_, "character"))
   stopifnot(inherits(cols_, "character") | inherits(cols_, "NULL"))
 
-  if(!(all(grepl("^Q", cols_, perl = T)) |
+  if(!suppress_warnings &
+    !(all(grepl("^Q", cols_, perl = T)) |
      all(grepl("\\_P$", cols_, perl = T)))
      ){
     warning_c(
@@ -217,7 +220,8 @@ plt_logic <- function(
     logic_ <- logic_ %>%
       dplyr::filter(Variable %in% cols_)
 
-    if(length(unique(logic_$plot_type1)) != 1){
+    if(!suppress_warnings &
+       length(unique(logic_$plot_type1)) != 1){
       warning_c(
         nm = "plt_logic2",
         msg = "These `cols_` appear to have incompatible plot types."
