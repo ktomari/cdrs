@@ -1,3 +1,7 @@
+# cdrs 0.4.0
+
+This is a minor update for two reasons: `cdrs_crosstab` has been renamed and now breaks. And now crosstabulation has a corresponding image created using the \{gt\} package
+
 # cdrs 0.3.5
 
 Fixed bug in `plt_legend_nrow()`.
