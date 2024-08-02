@@ -194,17 +194,25 @@ cdrs_plt_txt <- function(
     out$subtitle <- NULL
   } else {
 
+
     # Note, new approach (20240710):
     # Instead of deriving the full question for the subtitle from the
     # dictionary, we now derive it from inst/extdata/plot_parameters.xlsx
     # under the 'labels' sheet.
     out$subtitle <- labs %>%
       dplyr::filter(Variable %in% cols_) %>%
-      dplyr::filter(!is.na("full_title")) %>%
-      dplyr::mutate(full_title = paste0("Q", id, ". ", full_title)) %>%
-      dplyr::pull("full_title") %>%
-      unique() %>%
-      paste0(., collapse = " & ")
+      dplyr::filter(!is.na("full_title"))
+
+    if(!is.na(out$subtitle$full_title[1])){
+      out$subtitle <- out$subtitle %>%
+        dplyr::mutate(full_title = paste0("Q", id, ". ", full_title)) %>%
+        dplyr::pull("full_title") %>%
+        unique() %>%
+        paste0(., collapse = " & ")
+    } else {
+      out$subtitle <- as.character(NA)
+    }
+
   }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -546,7 +554,7 @@ cdrs_plt_prep <- function(
   # Variable | plot_type1  | pal_id   | affirmative_level | notes
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Q4_0     | dichotomous | purples1	| Yes               |
-  prep_$logic <- plt_logic(
+   prep_$logic <- plt_logic(
     file_ = param_file,
     cols_ = prep_$cols
   )
