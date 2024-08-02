@@ -13,9 +13,9 @@ test_that("cdrs_design. w/ fpc works with example",{
   expect_snapshot(x = serialized)
 })
 
-test_that("cdrs_crosstab. w/ works with example",{
+test_that("cdrs_svytb. w/ works with example",{
   demo <- cdrs_read_example(return_dict = F)
-  expect_snapshot(x = cdrs_crosstab(
+  expect_snapshot(x = cdrs_svytb(
     data_ = demo,
     cols_ = c("SEX_P", "Q3_5"),
     set_fpc = T
