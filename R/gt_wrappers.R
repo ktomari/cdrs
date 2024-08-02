@@ -317,7 +317,7 @@ cdrs_gt_simple <- function(
           spanner_lab <- stringr::str_wrap(
             string = spanner_lab,
             width = prep_$label_threshold) %>%
-            str_replace_all(pattern = "\n",
+            stringr::str_replace_all(pattern = "\n",
                             replacement = "<br>")
         }
       }
