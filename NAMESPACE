@@ -2,6 +2,8 @@
 
 export(cdrs_composite_index)
 export(cdrs_design)
+export(cdrs_gt_prep)
+export(cdrs_gt_simple)
 export(cdrs_plt_bar)
 export(cdrs_plt_pie)
 export(cdrs_plt_prep)
