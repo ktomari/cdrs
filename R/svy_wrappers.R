@@ -93,6 +93,7 @@ cdrs_design <- function(
 #' @param data_ data.frame or tibble, the DRS data set.
 #' @param cols_ a character vector of column names.
 #' @param set_fpc logical. `NULL` defaults to the default of `cdrs_design`. See documentation on `cdrs_design`.
+#' @param is_rounded logical. Should we set `survey::svytable` argument `round` to true?
 #' @param is_props logical. Whether to return proportions or frequencies (ie. numerical count).
 #' @param is_table logical. Whether to return the default object of svytable() which is an object of class "svytable", "xtabs", and "table", or to convert it into a data.frame.
 #'
@@ -100,21 +101,24 @@ cdrs_design <- function(
 #' @export
 #'
 #' @examples
-#' results <- cdrs::cdrs_crosstab(
+#' results <- cdrs::cdrs_svytb(
 #'      data_ = cdrs::cdrs_read_example(return_dict = FALSE),
 #'      cols_ = c("AGE_P", "Q1_1")
 #'      )
-cdrs_crosstab <- function(
+cdrs_svytb <- function(
     data_,
     cols_,
     set_fpc = TRUE,
+    is_rounded = FALSE,
     is_props = TRUE,
     is_table = FALSE
 ){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Input validation ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  stopifnot(length(cols_) == 2 & class(cols_) == "character")
+  stopifnot(inherits(data_, "data.frame"))
+  stopifnot(inherits(cols_, "character"))
+  stopifnot(length(cols_) == 2)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Subset
@@ -136,7 +140,9 @@ cdrs_crosstab <- function(
              cols_[1],
              " + ",
              cols_[2])),
-    design = design_
+    design = design_,
+    round = is_rounded,
+    na.rm = TRUE
   )
 
   if(is_props){
