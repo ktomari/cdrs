@@ -74,7 +74,7 @@ cdrs_gt_prep <- function(
   # Sort
   # Generally speaking, we want the second variable to be categorical
   # if possible.
-  order_ <- tibble(
+  order_ <- tibble::tibble(
     plot_type1 = c("dichotomous", "diverging", "ordinal", "categorical"),
     order = 1:4
   )
@@ -254,7 +254,7 @@ cdrs_gt_simple <- function(
       # lets combine columns from both tables.
       if(nm %in% xt$col2_lvls){
         # create tibble to return
-        tibble(
+        tibble::tibble(
           # paste values together, eg. "3 (0.1%)"
           col = paste0(
             xt$cnt_c[[nm]],
