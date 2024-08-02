@@ -64,7 +64,7 @@ cdrs_gt_prep <- function(
     cols_ = c(col1, col2),
     suppress_warnings = TRUE
   ) %>%
-    mutate(suborder = 1:dplyr::n())
+    dplyr::mutate(suborder = 1:dplyr::n())
 
   # Error check
   # We don't want numeric variables
@@ -231,8 +231,8 @@ cdrs_gt_simple <- function(
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Sort the prp_c data.frame by the cnt_c stub levels
   xt$prp_c <- xt$prp_c %>%
-    mutate(stub = factor(stub, levels = xt$col1_lvls)) %>%
-    arrange(stub)
+    dplyr::mutate(stub = factor(stub, levels = xt$col1_lvls)) %>%
+    dplyr::arrange(stub)
 
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -341,7 +341,9 @@ cdrs_gt_simple <- function(
         # stretch = "condensed",
         # v_align = "bottom"
       ),
-      locations = gt::cells_stub(rows = everything())
+      locations = gt::cells_stub(
+        rows = tidyselect::everything()
+        )
     ) %>%
     # SPANNER
     gt::tab_spanner(
@@ -357,7 +359,8 @@ cdrs_gt_simple <- function(
         stretch = "condensed",
         v_align = "bottom"
       ),
-      locations = gt::cells_column_spanners(spanners = spanner_lab)
+      locations = gt::cells_column_spanners(
+        spanners = spanner_lab)
     ) %>%
     # bottom row
     gt::tab_style(
@@ -367,7 +370,7 @@ cdrs_gt_simple <- function(
         weight = hlw
         ),
       locations = gt::cells_body(
-        columns = everything(),
+        columns = tidyselect::everything(),
         rows = num_rows
       )
     ) %>%
@@ -388,7 +391,7 @@ cdrs_gt_simple <- function(
         ),
       locations = gt::cells_body(
         columns = num_cols,
-        rows = everything()
+        rows = tidyselect::everything()
       )
     ) %>%
     gt::tab_style(
@@ -421,11 +424,11 @@ cdrs_gt_simple <- function(
       if(length(stub_lab) == 1){
 
         if(inherits(prep_$label_threshold, "numeric")){
-          stub_lab <- stringr::str_wrap(
-            string = stub_lab,
-            width = prep_$label_threshold) %>%
-            str_replace_all(pattern = "\n",
-                            replacement = "<br>")
+          stub_lab <- stub_lab %>%
+            stringr::str_wrap(
+              width = prep_$label_threshold) %>%
+            stringr::str_replace_all(pattern = "\n",
+                                     replacement = "<br>")
         }
 
         gt1 <- gt1 %>%
@@ -439,14 +442,14 @@ cdrs_gt_simple <- function(
             locations = gt::cells_stubhead()
           ) %>%
           # Add a vertical line to the right of the stubhead
-          tab_style(
-            style = cell_borders(
+          gt::tab_style(
+            style = gt::cell_borders(
               sides = "right",
               color = "#D3D3D3",
               weight = gt::px(lw),  # Adjust the line thickness
               style = "solid"
             ),
-            locations = cells_stubhead()
+            locations = gt::cells_stubhead()
           )
       }
     }
@@ -462,14 +465,14 @@ cdrs_gt_simple <- function(
         locations = gt::cells_stubhead()
       ) %>%
       # Add a vertical line to the right of the stubhead
-      tab_style(
-        style = cell_borders(
+      gt::tab_style(
+        style = gt::cell_borders(
           sides = "right",
           color = "#D3D3D3",
           weight = gt::px(lw),  # Adjust the line thickness
           style = "solid"
         ),
-        locations = cells_stubhead()
+        locations = gt::cells_stubhead()
       )
   }
 
