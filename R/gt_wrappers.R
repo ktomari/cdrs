@@ -13,6 +13,7 @@
 #' @param label_threshold numeric. The character at which to wrap labels using `stringr::str_wrap()`.
 #' @param param_file character. Path to plot_parameters.xlsx.
 #' @return list (named `prep_` in other \{cdrs\} functions).
+#' @export
 cdrs_gt_prep <- function(
     data_,
     col1,
@@ -143,6 +144,7 @@ cdrs_gt_prep <- function(
 #' Calculates a contingency table showing weighted counts and row percentages as a \{gt\} table.
 #' @param prep_ list. Output of `cdrs::cdrs_gt_prep()`
 #' @return gt object.
+#' @export
 cdrs_gt_simple <- function(
     prep_
 ){
