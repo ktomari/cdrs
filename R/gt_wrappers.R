@@ -1,4 +1,18 @@
 
+#' @title Prepare data for \{gt\} table.
+#'
+#' @description
+#' Obtain metadata needed to create a table with `cdrs_gt_simple`.
+#'
+#' @param data_ data.frame. The full CDRS data set.
+#' @param col1 character. The first QID of interest, eg "Q1_1" or "Zone".
+#' @param col2 character. The second QID of interest.
+#' @param dict_ data.frame. The CDRS data dictionary.
+#' @param add_labs logical. Whether to add labels (ie. for the stubhead and spanner).
+#' @param add_title logical. Whether to add the gt title and subtitle.
+#' @param label_threshold numeric. The character at which to wrap labels using `stringr::str_wrap()`.
+#' @param param_file character. Path to plot_parameters.xlsx.
+#' @return list (named `prep_` in other \{cdrs\} functions).
 cdrs_gt_prep <- function(
     data_,
     col1,
@@ -123,11 +137,11 @@ cdrs_gt_prep <- function(
 }
 
 
-#' Simple Crosstabulation Combined Table
+#' @title Simple Crosstabulation Combined Table
 #'
 #' @description
 #' Calculates a contingency table showing weighted counts and row percentages as a \{gt\} table.
-#' @param prep_ list. Output of cdrs_gt_prep
+#' @param prep_ list. Output of `cdrs::cdrs_gt_prep()`
 #' @return gt object.
 cdrs_gt_simple <- function(
     prep_

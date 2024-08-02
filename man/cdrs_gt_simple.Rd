@@ -7,7 +7,7 @@
 cdrs_gt_simple(prep_)
 }
 \arguments{
-\item{prep_}{list. Output of cdrs_gt_prep}
+\item{prep_}{list. Output of \code{cdrs::cdrs_gt_prep()}}
 }
 \value{
 gt object.
