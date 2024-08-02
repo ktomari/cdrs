@@ -108,6 +108,14 @@ generate_grp <- function(
 enrich_dict <- function(
     dict
 ){
+  # Input validation
+  stopifnot(inherits(dict, "data.frame"))
+
+  if(dict$Variable[1] %in% "Zone"){
+    warning_c("enrich_dict1", "The dictionary for Zone cannot be enriched.")
+    return(dict)
+  }
+
   # Sometimes we subset the dictionary for a specific set of variables.
   # So, we need to see if the "Label" is present.
   if(!("Label" %in% dict$name)){
