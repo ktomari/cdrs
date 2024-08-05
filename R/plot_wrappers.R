@@ -1231,6 +1231,7 @@ cdrs_plt_stacked <- function(
 #'
 #' @param prep_ list. An object returned by `cdrs_plt_prep`.
 #' @return ggplot2 object.
+#' @export
 cdrs_plt_hist <- function(
     prep_
 ){
