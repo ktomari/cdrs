@@ -1,3 +1,7 @@
+# cdrs 0.4.6
+
+Export `cdrs_plt_hist`.
+
 # cdrs 0.4.5
 
 # cdrs 0.4.4
