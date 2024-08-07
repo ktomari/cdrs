@@ -1,3 +1,11 @@
+# cdrs 0.5.0
+
+Changed how gt simple table is displayed to choose between:
+
+1) counts
+2) percents
+3) counts with percents in parens.
+
 # cdrs 0.4.6
 
 Export `cdrs_plt_hist`.
