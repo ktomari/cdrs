@@ -8,6 +8,8 @@
 #' @param col1 character. The first QID of interest, eg "Q1_1" or "Zone".
 #' @param col2 character. The second QID of interest.
 #' @param dict_ data.frame. The CDRS data dictionary.
+#' @param show_percents logical. Show percents in table.
+#' @param show_count logical. Show (weighted) counts in table.
 #' @param add_labs logical. Whether to add labels (ie. for the stubhead and spanner).
 #' @param add_title logical. Whether to add the gt title and subtitle.
 #' @param label_threshold numeric. The character at which to wrap labels using `stringr::str_wrap()`.
@@ -19,6 +21,8 @@ cdrs_gt_prep <- function(
     col1,
     col2,
     dict_ = NULL,
+    show_percents = TRUE,
+    show_counts = FALSE,
     add_labs = TRUE,
     add_title = FALSE,
     label_threshold = 20,
@@ -27,10 +31,19 @@ cdrs_gt_prep <- function(
                              package = "cdrs")
 ){
 
+  # Input validation ----
+  stopifnot(inherits(show_percents, "logical"))
+  stopifnot(inherits(show_counts, "logical"))
+  stopifnot(show_percents | show_counts)
+  stopifnot(inherits(add_labs, "logical"))
+  stopifnot(inherits(add_title, "logical"))
+
   # initialize output variable, a list object.
   prep_ <- list()
 
   # store variables to pass along to gt() functions.
+  prep_$show_percents <- show_percents
+  prep_$show_counts <- show_counts
   prep_$add_labs <- add_labs
   prep_$add_title <- add_title
   prep_$label_threshold <- label_threshold
@@ -102,8 +115,6 @@ cdrs_gt_prep <- function(
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Strip dictionary of unneeded columns/Variables
 
-
-
   dict1 <- dict_ %>%
     dplyr::filter(Variable %in% col1) %>%
     enrich_dict()
@@ -168,38 +179,46 @@ cdrs_gt_simple <- function(
   # cdrs_svytb ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Get weighted counts
-  xt$cnt <- cdrs_svytb(
-    data_ = data_,
-    cols_ = cols_,
-    is_rounded = T,
-    is_props = F,
-    is_table = F
-  ) |>
-    stats::addmargins()
+  if(prep_$show_counts){
+    xt$cnt <- cdrs_svytb(
+      data_ = data_,
+      cols_ = cols_,
+      is_rounded = T,
+      is_props = F,
+      is_table = F
+    ) |>
+      stats::addmargins()
+  }
+
 
   # Get weighted proportions
-  xt$prp <- cdrs_svytb(
-    data_ = data_,
-    cols_ = cols_,
-    is_rounded = F,
-    is_props = T,
-    is_table = F
-  ) |>
-    stats::addmargins(margin = 1)
+  if(prep_$show_percents){
+    xt$prp <- cdrs_svytb(
+      data_ = data_,
+      cols_ = cols_,
+      is_rounded = F,
+      is_props = T,
+      is_table = F
+    ) |>
+      stats::addmargins()
+  }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Clean svytbs ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Clean counts.
+  if(prep_$show_counts){
   xt$cnt_c <- xt$cnt %>%
     stats::ftable() %>%
     as.data.frame() %>%
     dplyr::rename(stub = cols_[1]) %>%
     tidyr::pivot_wider(names_from = cols_[2],
                        values_from = "Freq")
+  }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Clean proportions.
+  if(prep_$show_percents){
   xt$prp_c <- xt$prp %>%
     as.data.frame() %>%
     dplyr::rename(stub = cols_[1]) %>%
@@ -208,6 +227,7 @@ cdrs_gt_simple <- function(
     dplyr::select(-Freq) %>%
     tidyr::pivot_wider(names_from = cols_[2],
                        values_from = "percent")
+  }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Get levels ----
@@ -215,62 +235,102 @@ cdrs_gt_simple <- function(
   # Get col2 levels
   # eg. if col2 is Zone,
   # then, col2_lvls is c("1", "2", "3")
-  xt$col2_lvls <- xt$prp %>%
-    as.data.frame() %>%
-    dplyr::pull(tidyselect::all_of(cols_[2])) %>%
-    as.character() %>%
-    unique()
+  if(prep_$show_percents){
+    col2_lvls <- xt$prp %>%
+      as.data.frame() %>%
+      dplyr::pull(tidyselect::all_of(cols_[2])) %>%
+      as.character() %>%
+      unique()
 
-  # Get the col1/stub levels from the main data.frame cnt_c
-  xt$col1_lvls <- xt$cnt_c$stub %>%
-    levels()
+    # Get the col1/stub levels from the main data.frame cnt_c
+    xt$col1_lvls <- xt$prp_c$stub %>%
+      levels()
+
+  } else {
+    col2_lvls <- xt$cnt %>%
+      as.data.frame() %>%
+      dplyr::pull(tidyselect::all_of(cols_[2])) %>%
+      as.character() %>%
+      unique()
+
+    # Get the col1/stub levels from the main data.frame cnt_c
+    xt$col1_lvls <- xt$cnt_c$stub %>%
+      levels()
+  }
+
+  xt$col2_lvls <- col2_lvls[col2_lvls != "Sum"]
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Sort ----
   # This step may not be necessary.
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Sort the prp_c data.frame by the cnt_c stub levels
-  xt$prp_c <- xt$prp_c %>%
-    dplyr::mutate(stub = factor(stub, levels = xt$col1_lvls)) %>%
-    dplyr::arrange(stub)
-
+  if(prep_$show_counts & prep_$show_percents){
+    xt$prp_c <- xt$prp_c %>%
+      dplyr::mutate(stub = factor(stub, levels = xt$col1_lvls)) %>%
+      dplyr::arrange(stub)
+  }
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Combination Table ----
+  # Final Table ----
   # TODO see if gt::merge_n_pct() is better
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # For combination table:
   # Now iterate through each column corresponding to
   # a level in cols_[2] and add the percentage.
   # For example, if cols_[2] is Zone,
   # there should be 3 columns, labeled "1", "2", and "3".
   # We'll splice the percentage into the count,
   # so it reads something like, "3 (0.1%)"
-  xt$cmb <- purrr::map_dfc(
-    .x = 1:ncol(xt$cnt_c),
-    .f = function(i){
-      # get colname
-      nm <- names(xt$cnt_c)[i]
-      # If this is a col2 level,
-      # lets combine columns from both tables.
-      if(nm %in% xt$col2_lvls){
+  if(prep_$show_counts & prep_$show_percents){
+    # COMBINATION TABLE
+    xt$final <- purrr::map_dfc(
+      .x = 1:ncol(xt$cnt_c),
+      .f = function(i){
+        # get colname
+        nm <- names(xt$cnt_c)[i]
+
         # create tibble to return
-        tibble::tibble(
-          # paste values together, eg. "3 (0.1%)"
-          col = paste0(
-            xt$cnt_c[[nm]],
-            " (",
-            xt$prp_c[[nm]],
-            ")"
-          )
-        ) %>%
-          # set name to col2 factor level
-          magrittr::set_names(nm) %>%
-          return()
-      } else {
-        # Return if not a col2 factor column
-        return(xt$cnt_c[i])
-      }
-    })
+          tibble::tibble(
+            # paste values together, eg. "3 (0.1%)"
+            col = paste0(
+              xt$cnt_c[[nm]],
+              " (",
+              xt$prp_c[[nm]],
+              ")"
+            )
+          ) %>%
+            # set name to col2 factor level
+            magrittr::set_names(nm)
+        # OLD Code
+        # # If this is a col2 level,
+        # # lets combine columns from both tables.
+        # if(nm %in% xt$col2_lvls){
+        #   # create tibble to return
+        #   tibble::tibble(
+        #     # paste values together, eg. "3 (0.1%)"
+        #     col = paste0(
+        #       xt$cnt_c[[nm]],
+        #       " (",
+        #       xt$prp_c[[nm]],
+        #       ")"
+        #     )
+        #   ) %>%
+        #     # set name to col2 factor level
+        #     magrittr::set_names(nm) %>%
+        #     return()
+        # } else {
+        #   # Return if not a col2 factor column
+        #   return(xt$cnt_c[i])
+        # }
+      })
+  } else if(prep_$show_counts){
+    # COUNT TABLE
+    xt$final <- xt$cnt_c
+  } else if(prep_$show_percents){
+    # PROPORTIONS TABLE
+    xt$final <- xt$prp_c
+  }
 
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -289,8 +349,8 @@ cdrs_gt_simple <- function(
   hclr <- "black"
 
   # Get the number of columns and rows
-  num_cols <- ncol(xt$cmb)
-  num_rows <- nrow(xt$cmb)
+  num_cols <- ncol(xt$final)
+  num_rows <- nrow(xt$final)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Spanner label ----
@@ -327,7 +387,7 @@ cdrs_gt_simple <- function(
   }
 
   # Take the sums out.
-  gt1 <- xt$cmb %>%
+  gt1 <- xt$final %>%
     gt::gt(
       rowname_col = "stub",
       # row_group_as_column = FALSE
