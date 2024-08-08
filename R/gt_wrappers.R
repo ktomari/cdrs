@@ -9,7 +9,7 @@
 #' @param col2 character. The second QID of interest.
 #' @param dict_ data.frame. The CDRS data dictionary.
 #' @param show_percents logical. Show percents in table.
-#' @param show_count logical. Show (weighted) counts in table.
+#' @param show_counts logical. Show (weighted) counts in table.
 #' @param add_labs logical. Whether to add labels (ie. for the stubhead and spanner).
 #' @param add_title logical. Whether to add the gt title and subtitle.
 #' @param order_by character. With this parameter, you can choose which questions get placed along the rows or columns. Your choices are "rank", which always tries to place categorical variables along the columns; "tall" which places whichever variable has the most levels along the rows; "wide" is the opposite of "tall".
@@ -114,9 +114,10 @@ cdrs_gt_prep <- function(
     order_tb <- dict_ %>%
       dplyr::filter(Variable %in% c(col1, col2)) %>%
       dplyr::filter(name == "factors") %>%
-      dplyr::filter(str_detect(value,
-                               pattern = "\\<(Decline to answer|Missing)\\>",
-                               negate = TRUE)) %>%
+      dplyr::filter(stringr::str_detect(
+        value,
+        pattern = "\\<(Decline to answer|Missing)\\>",
+        negate = TRUE)) %>%
       dplyr::group_by(Variable) %>%
       dplyr::summarise(n = dplyr::n()) %>%
       dplyr::arrange(dplyr::desc(n))
@@ -129,9 +130,10 @@ cdrs_gt_prep <- function(
     order_tb <- dict_ %>%
       dplyr::filter(Variable %in% c(col1, col2)) %>%
       dplyr::filter(name == "factors") %>%
-      dplyr::filter(str_detect(value,
-                               pattern = "\\<(Decline to answer|Missing)\\>",
-                               negate = TRUE)) %>%
+      dplyr::filter(stringr::str_detect(
+        value,
+        pattern = "\\<(Decline to answer|Missing)\\>",
+        negate = TRUE)) %>%
       dplyr::group_by(Variable) %>%
       dplyr::summarise(n = dplyr::n()) %>%
       dplyr::arrange(n)

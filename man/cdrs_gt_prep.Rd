@@ -9,8 +9,11 @@ cdrs_gt_prep(
   col1,
   col2,
   dict_ = NULL,
+  show_percents = TRUE,
+  show_counts = FALSE,
   add_labs = TRUE,
   add_title = FALSE,
+  order_by = "rank",
   label_threshold = 20,
   param_file = system.file("extdata", "plot_parameters.xlsx", package = "cdrs")
 )
@@ -24,9 +27,15 @@ cdrs_gt_prep(
 
 \item{dict_}{data.frame. The CDRS data dictionary.}
 
+\item{show_percents}{logical. Show percents in table.}
+
+\item{show_counts}{logical. Show (weighted) counts in table.}
+
 \item{add_labs}{logical. Whether to add labels (ie. for the stubhead and spanner).}
 
 \item{add_title}{logical. Whether to add the gt title and subtitle.}
+
+\item{order_by}{character. With this parameter, you can choose which questions get placed along the rows or columns. Your choices are "rank", which always tries to place categorical variables along the columns; "tall" which places whichever variable has the most levels along the rows; "wide" is the opposite of "tall".}
 
 \item{label_threshold}{numeric. The character at which to wrap labels using \code{stringr::str_wrap()}.}
 
