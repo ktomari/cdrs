@@ -12,6 +12,7 @@
 #' @param show_count logical. Show (weighted) counts in table.
 #' @param add_labs logical. Whether to add labels (ie. for the stubhead and spanner).
 #' @param add_title logical. Whether to add the gt title and subtitle.
+#' @param order_by character. With this parameter, you can choose which questions get placed along the rows or columns. Your choices are "rank", which always tries to place categorical variables along the columns; "tall" which places whichever variable has the most levels along the rows; "wide" is the opposite of "tall".
 #' @param label_threshold numeric. The character at which to wrap labels using `stringr::str_wrap()`.
 #' @param param_file character. Path to plot_parameters.xlsx.
 #' @return list (named `prep_` in other \{cdrs\} functions).
@@ -25,6 +26,7 @@ cdrs_gt_prep <- function(
     show_counts = FALSE,
     add_labs = TRUE,
     add_title = FALSE,
+    order_by = "rank",
     label_threshold = 20,
     param_file = system.file("extdata",
                              "plot_parameters.xlsx",
@@ -37,6 +39,8 @@ cdrs_gt_prep <- function(
   stopifnot(show_percents | show_counts)
   stopifnot(inherits(add_labs, "logical"))
   stopifnot(inherits(add_title, "logical"))
+  stopifnot(inherits(order_by, "character"))
+  stopifnot(order_by %in% c("rank", "tall", "wide"))
 
   # initialize output variable, a list object.
   prep_ <- list()
@@ -84,27 +88,58 @@ cdrs_gt_prep <- function(
   # TODO offer opportunity to do quantiles
   stopifnot(!("numeric" %in% prep_$logic$plot_type1))
 
-  # Sort
-  # Generally speaking, we want the second variable to be categorical
-  # if possible.
-  order_ <- tibble::tibble(
-    plot_type1 = c("dichotomous", "diverging", "ordinal", "categorical"),
-    order = 1:4
-  )
+  # Order ----
+  if(order_by == "rank"){
+    # Generally speaking, we want the second variable to be categorical
+    # if possible.
+    order_ <- tibble::tibble(
+      plot_type1 = c("dichotomous", "diverging", "ordinal", "categorical"),
+      order = 1:4
+    )
 
-  prep_$logic <- prep_$logic %>%
-    dplyr::left_join(order_, by = "plot_type1") %>%
-    dplyr::arrange(order, suborder) %>%
-    dplyr::select(-order, -suborder)
+    prep_$logic <- prep_$logic %>%
+      dplyr::left_join(order_, by = "plot_type1") %>%
+      dplyr::arrange(order, suborder) %>%
+      dplyr::select(-order, -suborder)
 
-  # if the order is wrong,
-  # flip col1 and col2
-  if(!(prep_$logic$Variable[1] %in% col1)){
-    tmp <- col1
-    col1 <- col2
-    col2 <- tmp
-    rm(tmp)
+    # if the order is wrong,
+    # flip col1 and col2
+    if(!(prep_$logic$Variable[1] %in% col1)){
+      tmp <- col1
+      col1 <- col2
+      col2 <- tmp
+      rm(tmp)
+    }
+  } else if(order_by == "tall"){
+    order_tb <- dict_ %>%
+      dplyr::filter(Variable %in% c(col1, col2)) %>%
+      dplyr::filter(name == "factors") %>%
+      dplyr::filter(str_detect(value,
+                               pattern = "\\<(Decline to answer|Missing)\\>",
+                               negate = TRUE)) %>%
+      dplyr::group_by(Variable) %>%
+      dplyr::summarise(n = dplyr::n()) %>%
+      dplyr::arrange(dplyr::desc(n))
+
+    col1 <- order_tb$Variable[1]
+    col2 <- order_tb$Variable[2]
+
+  } else {
+    # order_by is wide
+    order_tb <- dict_ %>%
+      dplyr::filter(Variable %in% c(col1, col2)) %>%
+      dplyr::filter(name == "factors") %>%
+      dplyr::filter(str_detect(value,
+                               pattern = "\\<(Decline to answer|Missing)\\>",
+                               negate = TRUE)) %>%
+      dplyr::group_by(Variable) %>%
+      dplyr::summarise(n = dplyr::n()) %>%
+      dplyr::arrange(n)
+
+    col1 <- order_tb$Variable[1]
+    col2 <- order_tb$Variable[2]
   }
+
 
   # Store cols in output object
   prep_$col1 <- col1
