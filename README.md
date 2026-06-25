@@ -19,7 +19,35 @@ install this package is provided in the following section.
 
 *This document was last updated on April 02, 2024.*
 
-## Installation
+## Installation (June 2026 Update)
+
+You can install the development version of cdrs from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pkg_install("ktomari/cdrs")
+```
+
+This method, however, requires you to have a Github Personal Access Token (PAT), and additionally will not build the package vignettes (ie. the tutorials). You can still access the unknitted vignettes on Github by going to code > vignettes.
+
+Alternatively, you can build the package from scratch. The following code is untested, but should work in theory.
+
+1. Either clone this repo in your Terminal/Shell, or click the green button Code and download the zip. The former method:
+
+```
+git clone https://github.com/ktomari/cdrs.git
+```
+
+2. In R, locate the directory where the unzipped cdrs directory is located. Open this project in Rstudio.
+
+```
+# install.packages("devtools")
+devtools::build_vignettes()
+pak::pkg_install(".")
+```
+
+## Installation (old)
 
 You can install the development version of cdrs from
 [GitHub](https://github.com/) with:
