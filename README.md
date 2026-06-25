@@ -39,7 +39,7 @@ Alternatively, you can build the package from scratch. The following code is unt
 git clone https://github.com/ktomari/cdrs.git
 ```
 
-2. In R, locate the directory where the unzipped cdrs directory is located. Open this project in Rstudio.
+2. Locate the directory where the unzipped cdrs directory is located. Open the project file, 'cdrs.Rproj' in Rstudio.
 
 ```
 # install.packages("devtools")
