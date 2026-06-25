@@ -47,7 +47,9 @@ devtools::build_vignettes()
 pak::pkg_install(".")
 ```
 
-## Installation (old)
+## Installation (Deprecated)
+
+*Please note, `devtools::install_github()` is deprecated.*
 
 You can install the development version of cdrs from
 [GitHub](https://github.com/) with:
